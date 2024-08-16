@@ -1,9 +1,8 @@
 {
   "name": "e-commerce-rest-api",
   "version": "1.0.0",
-  "description": "An E-commerce back-end using Node.js, Express.js",
+  "description": "An E-commerce back-end website using Node.js, Express.js",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
