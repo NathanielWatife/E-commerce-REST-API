@@ -1,15 +1,13 @@
-const express = require("express");
+import express from "express";
 const app = express();
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
+// import { configDotenv } from "dotenv";
 const dotenv = require("dotenv");
 const userRoute = require("./routes/user");
 const authRoute = require("./routes/auth");
 
 dotenv.config();
-
-mongoose.connect(process.env.MONGO_URL)
-.then(() => console.log("DB-Connection good!!"))
-.catch((err) => {
+mongoose.connect(process.env.MONGO_URL).then(() => console.log("DB-Connection good!!")).catch((err) => {
     console.log(err);
 });
 
