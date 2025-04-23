@@ -1,19 +1,16 @@
-import express from "express";
-const app = express();
-
-
-import connectDB from "./config/db";
-import dotenv from "dotenv";
-const dotenv = require("dotenv");
-
-
+import express from 'express';
+import dotenv from 'dotenv';
+import { connectDB } from './config/db.js';
+import authRoutes  from './routes/authRoutes.js';
 
 dotenv.config();
-
-connectDB();
+const app = express();
+// middleware
 app.use(express.json());
 //  creating routes
+app.use("/api/auth", authRoutes);
 
-app.listen(process.env.PORT || 5003, ()=> {
-    console.log("Back-end Server is running");
+app.listen(process.env.PORT, () => {
+  connectDB();
+  console.log(`Backend Server running on ${process.env.PORT}`);
 });
