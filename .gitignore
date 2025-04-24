@@ -1,8 +1,8 @@
-# Environment variables
-.env
-
 # Node.js dependencies
 node_modules/
+
+# Environment variables
+.env
 
 # Logs
 logs/
@@ -17,3 +17,21 @@ yarn-error.log*
 # IDE-specific files
 .vscode/
 .idea/
+
+# Build output
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Coverage reports
+coverage/
+
+# Dependency directories
+bower_components/
+
+# Miscellaneous
+*.swp
+*.swo
