@@ -17,5 +17,5 @@ router.post("/reset-verification", validateResendVerification, resendVerificatio
 
 // password reset
 router.post("/forgot-password", validateForgotPassword, forgotPassword);
-router,post("/reset-password", validateResetPassword, resetPassword);
+router.post("/reset-password", validateResetPassword, resetPassword);
 export default router;
