@@ -48,6 +48,9 @@ const userSchema = new mongoose.Schema(
             minlength: [8, "Password must be at least 8 characters"],
             select: false,
         },
+        phoneNumber: {
+            type: String
+        },
         avatar: {
             type: String,
             default: "default-avatar.jpg"
