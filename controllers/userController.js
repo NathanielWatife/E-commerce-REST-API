@@ -1,67 +1,652 @@
-import { User } from "../models/User.js";
-import bcryptjs from "bcryptjs";
-import { validationResult } from "express-validator";
+import { User } from "../models/User.js"
+import bcryptjs from "bcryptjs"
+import { validationResult } from "express-validator"
 
-
-// get user profile
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
 export const getUserProfile = async (req, res) => {
-    try {
-        const user = awaits User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id)
 
-        if (!user) {
-            return res.status(404).json({
-                succes: false,
-                message: "USer not found"
-            });
-        }
-        return res.status(201).json({
-            success: true,
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar,
-                phoneNumber: user.phoneNumber,
-                billingAddresses: user.billingAddresses,
-                shippingAddresses: user.shippingAddresses,
-                role: user.role,
-                isVerified: user.isVerified,
-                createdAt: user.createdAt,
-            }
-        })
-    } catch (error) {
-        console.error("Could not get user profile:", error)
-        return res.status(500).json({
-            succes: false,
-            message: "Server error",
-            error: process.env.NODE_ENV === "developemt" ? error.message : undefined 
-        })
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
     }
-};
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        phoneNumber: user.phoneNumber,
+        billingAddresses: user.billingAddresses,
+        shippingAddresses: user.shippingAddresses,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+      },
+    })
+  } catch (error) {
+    console.error("Get user profile error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+export const updateUserProfile = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
+
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { name, email, phoneNumber, password } = req.body
+
+    // Update user fields if provided
+    if (name) user.name = name
+    if (email) user.email = email
+    if (phoneNumber) user.phoneNumber = phoneNumber
+    if (password) {
+      user.password = await bcryptjs.hash(password, 12)
+    }
+
+    const updatedUser = await user.save()
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        phoneNumber: updatedUser.phoneNumber,
+        role: updatedUser.role,
+        isVerified: updatedUser.isVerified,
+      },
+    })
+  } catch (error) {
+    console.error("Update user profile error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Update user avatar
+// @route   PUT /api/users/profile/avatar
+// @access  Private
+export const updateUserAvatar = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
+
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { avatar } = req.body
+
+    // Update avatar
+    user.avatar = avatar
+
+    const updatedUser = await user.save()
+
+    return res.status(200).json({
+      success: true,
+      avatar: updatedUser.avatar,
+    })
+  } catch (error) {
+    console.error("Update user avatar error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Add billing address
+// @route   POST /api/users/profile/billing-address
+// @access  Private
+export const addBillingAddress = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
+
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { street, city, state, postalCode, country, isDefault } = req.body
+
+    // Create new address
+    const newAddress = {
+      street,
+      city,
+      state,
+      postalCode,
+      country,
+      isDefault: isDefault || false,
+    }
+
+    // If this address is set as default, update other addresses
+    if (isDefault) {
+      user.billingAddresses.forEach((address) => {
+        address.isDefault = false
+      })
+    }
+
+    // Add new address
+    user.billingAddresses.push(newAddress)
+
+    // If this is the first address, set it as default
+    if (user.billingAddresses.length === 1) {
+      user.billingAddresses[0].isDefault = true
+    }
+
+    await user.save()
+
+    return res.status(201).json({
+      success: true,
+      billingAddresses: user.billingAddresses,
+    })
+  } catch (error) {
+    console.error("Add billing address error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Update billing address
+// @route   PUT /api/users/profile/billing-address/:addressId
+// @access  Private
+export const updateBillingAddress = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
+
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { addressId } = req.params
+    const { street, city, state, postalCode, country, isDefault } = req.body
+
+    // Find address index
+    const addressIndex = user.billingAddresses.findIndex((address) => address._id.toString() === addressId)
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      })
+    }
+
+    // Update address fields
+    if (street) user.billingAddresses[addressIndex].street = street
+    if (city) user.billingAddresses[addressIndex].city = city
+    if (state) user.billingAddresses[addressIndex].state = state
+    if (postalCode) user.billingAddresses[addressIndex].postalCode = postalCode
+    if (country) user.billingAddresses[addressIndex].country = country
+
+    // Handle default address
+    if (isDefault) {
+      user.billingAddresses.forEach((address, index) => {
+        address.isDefault = index === addressIndex
+      })
+    }
+
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      billingAddresses: user.billingAddresses,
+    })
+  } catch (error) {
+    console.error("Update billing address error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Delete billing address
+// @route   DELETE /api/users/profile/billing-address/:addressId
+// @access  Private
+export const deleteBillingAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { addressId } = req.params
+
+    // Find address index
+    const addressIndex = user.billingAddresses.findIndex((address) => address._id.toString() === addressId)
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      })
+    }
+
+    // Check if this is the default address
+    const isDefault = user.billingAddresses[addressIndex].isDefault
+
+    // Remove address
+    user.billingAddresses.splice(addressIndex, 1)
+
+    // If removed address was default and there are other addresses, set a new default
+    if (isDefault && user.billingAddresses.length > 0) {
+      user.billingAddresses[0].isDefault = true
+    }
+
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      billingAddresses: user.billingAddresses,
+    })
+  } catch (error) {
+    console.error("Delete billing address error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Add shipping address
+// @route   POST /api/users/profile/shipping-address
+// @access  Private
+export const addShippingAddress = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
+
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { street, city, state, postalCode, country, isDefault } = req.body
+
+    // Create new address
+    const newAddress = {
+      street,
+      city,
+      state,
+      postalCode,
+      country,
+      isDefault: isDefault || false,
+    }
+
+    // If this address is set as default, update other addresses
+    if (isDefault) {
+      user.shippingAddresses.forEach((address) => {
+        address.isDefault = false
+      })
+    }
+
+    // Add new address
+    user.shippingAddresses.push(newAddress)
+
+    // If this is the first address, set it as default
+    if (user.shippingAddresses.length === 1) {
+      user.shippingAddresses[0].isDefault = true
+    }
+
+    await user.save()
+
+    return res.status(201).json({
+      success: true,
+      shippingAddresses: user.shippingAddresses,
+    })
+  } catch (error) {
+    console.error("Add shipping address error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Update shipping address
+// @route   PUT /api/users/profile/shipping-address/:addressId
+// @access  Private
+export const updateShippingAddress = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
+
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { addressId } = req.params
+    const { street, city, state, postalCode, country, isDefault } = req.body
+
+    // Find address index
+    const addressIndex = user.shippingAddresses.findIndex((address) => address._id.toString() === addressId)
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      })
+    }
+
+    // Update address fields
+    if (street) user.shippingAddresses[addressIndex].street = street
+    if (city) user.shippingAddresses[addressIndex].city = city
+    if (state) user.shippingAddresses[addressIndex].state = state
+    if (postalCode) user.shippingAddresses[addressIndex].postalCode = postalCode
+    if (country) user.shippingAddresses[addressIndex].country = country
+
+    // Handle default address
+    if (isDefault) {
+      user.shippingAddresses.forEach((address, index) => {
+        address.isDefault = index === addressIndex
+      })
+    }
+
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      shippingAddresses: user.shippingAddresses,
+    })
+  } catch (error) {
+    console.error("Update shipping address error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Delete shipping address
+// @route   DELETE /api/users/profile/shipping-address/:addressId
+// @access  Private
+export const deleteShippingAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    const { addressId } = req.params
+
+    // Find address index
+    const addressIndex = user.shippingAddresses.findIndex((address) => address._id.toString() === addressId)
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      })
+    }
+
+    // Check if this is the default address
+    const isDefault = user.shippingAddresses[addressIndex].isDefault
+
+    // Remove address
+    user.shippingAddresses.splice(addressIndex, 1)
+
+    // If removed address was default and there are other addresses, set a new default
+    if (isDefault && user.shippingAddresses.length > 0) {
+      user.shippingAddresses[0].isDefault = true
+    }
+
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      shippingAddresses: user.shippingAddresses,
+    })
+  } catch (error) {
+    console.error("Delete shipping address error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// @desc    Get all users (admin only)
+// @route   GET /api/users
+// @access  Private/Admin
+export const getUsers = async (req, res) => {
+  try {
+    const pageSize = Number(req.query.pageSize) || 10
+    const page = Number(req.query.page) || 1
+
+    const count = await User.countDocuments({})
+    const users = await User.find({})
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .limit(pageSize)
+      .skip(pageSize * (page - 1))
+
+    return res.status(200).json({
+      success: true,
+      users,
+      page,
+      pages: Math.ceil(count / pageSize),
+      count,
+    })
+  } catch (error) {
+    console.error("Get all users error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
 
 
-// update user profile
-export const updateUserProfile = async (req, res) => {};
+// get user by ID
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password")
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
 
-// update user profile avatar
-export const updateUserAvatar = async (req, res) => {};
+    return res.status(200).json({
+      success: true,
+      user,
+    })
+  } catch (error) {
+    console.error("Get user by ID error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
 
+// update user
+export const updateUser = async (req, res) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    })
+  }
 
-// add billing address
-export const addBillingAddress = async (req, res) => {};
+  try {
+    const user = await User.findById(req.params.id)
 
-// update billing address
-export const updateBillingAddress = async (req, res) = {};
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
 
-// delete billing address
-export const deleteBillingAddress = async (req, res) => {};
+    const { name, email, role, isVerified } = req.body
 
-// add shipping address
-export const addShippingAddress = async (req, res) => {};
+    // Update user fields if provided
+    if (name) user.name = name
+    if (email) user.email = email
+    if (role) user.role = role
+    if (isVerified !== undefined) user.isVerified = isVerified
 
-// update shipping address
-export const updateShippingAddress = async (req, res) => {};
+    const updatedUser = await user.save()
 
-// delete shipping address
-export const deleteShippingAddress = async (req, res) => {};
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        isVerified: updatedUser.isVerified,
+      },
+    })
+  } catch (error) {
+    console.error("Update user error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+// delete user account
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
+    // Prevent admin from deleting themselves
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete your own account",
+      })
+    }
+
+    await user.deleteOne()
+
+    return res.status(200).json({
+      success: true,
+      message: "User removed",
+    })
+  } catch (error) {
+    console.error("Delete user error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
