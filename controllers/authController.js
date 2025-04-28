@@ -11,6 +11,20 @@ const generateRandomToken = (length = 6) => {
     .substring(0, length)
 }
 
+
+// helper functions to get client IP, device informations
+const getClientInfo = async (req) => {
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress
+  const userAgent = req.headers["user-agent"] || "Unknown Device"
+  return {
+    ip,
+    device: userAgent,
+    time: new Date().toLocaleString(),
+  }
+}
+
+
+// signup
 export const signup = async (req, res) => {
   // validate user inputs
   const errors = validationResult(req)
@@ -109,6 +123,17 @@ export const login = async (req, res) => {
       })
     }
 
+    // get client info for login notifications
+    const clientInfo = getClientInfo(req)
+
+    // send notification email of login to user
+    const loginEmailContent = generateLoginNotificationEmail(user.name, clientInfo)
+    await sendEmail({
+      email: user.email,
+      subject: "New Login to your Account",
+      message: loginEmailContent
+    })
+
     // update lastlogin
     user.lastlogin = Date.now()
     await user.save()
@@ -136,6 +161,8 @@ export const login = async (req, res) => {
   }
 }
 
+
+// logout
 export const logout = async (req, res) => {
   try {
     res.clearCookie("token")
@@ -152,6 +179,10 @@ export const logout = async (req, res) => {
   }
 }
 
+
+
+
+// email verification
 export const verifyEmail = async (req, res) => {
   const { email, token } = req.body
 
@@ -175,6 +206,14 @@ export const verifyEmail = async (req, res) => {
     user.verificationTokenExpiredAt = undefined
     await user.save()
 
+    // email welcome verification
+    const welcomeEmailContent = generateWelcomeEmail(user.name)
+    await sendEmail({
+      email: user,
+      subject: "Welcome to Our Store",
+      message: welcomeEmailContent
+    })
+
     return res.status(200).json({
       success: true,
       message: "Email verified successfully",
@@ -189,6 +228,8 @@ export const verifyEmail = async (req, res) => {
   }
 }
 
+
+// send verification again if the recent expired
 export const resendVerificationEmail = async (req, res) => {
   const { email } = req.body
 
@@ -236,6 +277,8 @@ export const resendVerificationEmail = async (req, res) => {
   }
 }
 
+
+// forgot password
 export const forgotPassword = async (req, res) => {
   const { email } = req.body
 
@@ -276,6 +319,9 @@ export const forgotPassword = async (req, res) => {
   }
 }
 
+
+
+// reset password
 export const resetPassword = async (req, res) => {
   const { email, token, newPassword } = req.body
 
