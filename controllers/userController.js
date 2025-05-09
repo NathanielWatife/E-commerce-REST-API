@@ -24,8 +24,8 @@ export const getUserProfile = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         phoneNumber: user.phoneNumber,
-        billingAddresses: user.billingAddresses,
-        shippingAddresses: user.shippingAddresses,
+        billingAddress: user.billingAddress,
+        shippingAddress: user.shippingAddress,
         role: user.role,
         isVerified: user.isVerified,
         createdAt: user.createdAt,
@@ -176,24 +176,24 @@ export const addBillingAddress = async (req, res) => {
 
     // If this address is set as default, update other addresses
     if (isDefault) {
-      user.billingAddresses.forEach((address) => {
+      user.billingAddress.forEach((address) => {
         address.isDefault = false
       })
     }
 
     // Add new address
-    user.billingAddresses.push(newAddress)
+    user.billingAddress.push(newAddress)
 
     // If this is the first address, set it as default
-    if (user.billingAddresses.length === 1) {
-      user.billingAddresses[0].isDefault = true
+    if (user.billingAddress.length === 1) {
+      user.billingAddress[0].isDefault = true
     }
 
     await user.save()
 
     return res.status(201).json({
       success: true,
-      billingAddresses: user.billingAddresses,
+      billingAddress: user.billingAddress,
     })
   } catch (error) {
     console.error("Add billing address error:", error)
@@ -231,7 +231,7 @@ export const updateBillingAddress = async (req, res) => {
     const { street, city, state, postalCode, country, isDefault } = req.body
 
     // Find address index
-    const addressIndex = user.billingAddresses.findIndex((address) => address._id.toString() === addressId)
+    const addressIndex = user.billingAddress.findIndex((address) => address._id.toString() === addressId)
 
     if (addressIndex === -1) {
       return res.status(404).json({
@@ -241,15 +241,15 @@ export const updateBillingAddress = async (req, res) => {
     }
 
     // Update address fields
-    if (street) user.billingAddresses[addressIndex].street = street
-    if (city) user.billingAddresses[addressIndex].city = city
-    if (state) user.billingAddresses[addressIndex].state = state
-    if (postalCode) user.billingAddresses[addressIndex].postalCode = postalCode
-    if (country) user.billingAddresses[addressIndex].country = country
+    if (street) user.billingAddress[addressIndex].street = street
+    if (city) user.billingAddress[addressIndex].city = city
+    if (state) user.billingAddress[addressIndex].state = state
+    if (postalCode) user.billingAddress[addressIndex].postalCode = postalCode
+    if (country) user.billingAddress[addressIndex].country = country
 
     // Handle default address
     if (isDefault) {
-      user.billingAddresses.forEach((address, index) => {
+      user.billingAddress.forEach((address, index) => {
         address.isDefault = index === addressIndex
       })
     }
@@ -258,7 +258,7 @@ export const updateBillingAddress = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      billingAddresses: user.billingAddresses,
+      billingAddress: user.billingAddress,
     })
   } catch (error) {
     console.error("Update billing address error:", error)
@@ -287,7 +287,7 @@ export const deleteBillingAddress = async (req, res) => {
     const { addressId } = req.params
 
     // Find address index
-    const addressIndex = user.billingAddresses.findIndex((address) => address._id.toString() === addressId)
+    const addressIndex = user.billingAddress.findIndex((address) => address._id.toString() === addressId)
 
     if (addressIndex === -1) {
       return res.status(404).json({
@@ -297,21 +297,21 @@ export const deleteBillingAddress = async (req, res) => {
     }
 
     // Check if this is the default address
-    const isDefault = user.billingAddresses[addressIndex].isDefault
+    const isDefault = user.billingAddress[addressIndex].isDefault
 
     // Remove address
-    user.billingAddresses.splice(addressIndex, 1)
+    user.billingAddress.splice(addressIndex, 1)
 
     // If removed address was default and there are other addresses, set a new default
-    if (isDefault && user.billingAddresses.length > 0) {
-      user.billingAddresses[0].isDefault = true
+    if (isDefault && user.billingAddress.length > 0) {
+      user.billingAddress[0].isDefault = true
     }
 
     await user.save()
 
     return res.status(200).json({
       success: true,
-      billingAddresses: user.billingAddresses,
+      billingAddress: user.billingAddress,
     })
   } catch (error) {
     console.error("Delete billing address error:", error)
@@ -359,24 +359,24 @@ export const addShippingAddress = async (req, res) => {
 
     // If this address is set as default, update other addresses
     if (isDefault) {
-      user.shippingAddresses.forEach((address) => {
+      user.shippingAddress.forEach((address) => {
         address.isDefault = false
       })
     }
 
     // Add new address
-    user.shippingAddresses.push(newAddress)
+    user.shippingAddress.push(newAddress)
 
     // If this is the first address, set it as default
-    if (user.shippingAddresses.length === 1) {
-      user.shippingAddresses[0].isDefault = true
+    if (user.shippingAddress.length === 1) {
+      user.shippingAddress[0].isDefault = true
     }
 
     await user.save()
 
     return res.status(201).json({
       success: true,
-      shippingAddresses: user.shippingAddresses,
+      shippingAddress: user.shippingAddress,
     })
   } catch (error) {
     console.error("Add shipping address error:", error)
@@ -414,7 +414,7 @@ export const updateShippingAddress = async (req, res) => {
     const { street, city, state, postalCode, country, isDefault } = req.body
 
     // Find address index
-    const addressIndex = user.shippingAddresses.findIndex((address) => address._id.toString() === addressId)
+    const addressIndex = user.shippingAddress.findIndex((address) => address._id.toString() === addressId)
 
     if (addressIndex === -1) {
       return res.status(404).json({
@@ -424,15 +424,15 @@ export const updateShippingAddress = async (req, res) => {
     }
 
     // Update address fields
-    if (street) user.shippingAddresses[addressIndex].street = street
-    if (city) user.shippingAddresses[addressIndex].city = city
-    if (state) user.shippingAddresses[addressIndex].state = state
-    if (postalCode) user.shippingAddresses[addressIndex].postalCode = postalCode
-    if (country) user.shippingAddresses[addressIndex].country = country
+    if (street) user.shippingAddress[addressIndex].street = street
+    if (city) user.shippingAddress[addressIndex].city = city
+    if (state) user.shippingAddress[addressIndex].state = state
+    if (postalCode) user.shippingAddress[addressIndex].postalCode = postalCode
+    if (country) user.shippingAddress[addressIndex].country = country
 
     // Handle default address
     if (isDefault) {
-      user.shippingAddresses.forEach((address, index) => {
+      user.shippingAddress.forEach((address, index) => {
         address.isDefault = index === addressIndex
       })
     }
@@ -441,7 +441,7 @@ export const updateShippingAddress = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      shippingAddresses: user.shippingAddresses,
+      shippingAddress: user.shippingAddress,
     })
   } catch (error) {
     console.error("Update shipping address error:", error)
@@ -470,7 +470,7 @@ export const deleteShippingAddress = async (req, res) => {
     const { addressId } = req.params
 
     // Find address index
-    const addressIndex = user.shippingAddresses.findIndex((address) => address._id.toString() === addressId)
+    const addressIndex = user.shippingAddress.findIndex((address) => address._id.toString() === addressId)
 
     if (addressIndex === -1) {
       return res.status(404).json({
@@ -480,21 +480,21 @@ export const deleteShippingAddress = async (req, res) => {
     }
 
     // Check if this is the default address
-    const isDefault = user.shippingAddresses[addressIndex].isDefault
+    const isDefault = user.shippingAddress[addressIndex].isDefault
 
     // Remove address
-    user.shippingAddresses.splice(addressIndex, 1)
+    user.shippingAddress.splice(addressIndex, 1)
 
     // If removed address was default and there are other addresses, set a new default
-    if (isDefault && user.shippingAddresses.length > 0) {
-      user.shippingAddresses[0].isDefault = true
+    if (isDefault && user.shippingAddress.length > 0) {
+      user.shippingAddress[0].isDefault = true
     }
 
     await user.save()
 
     return res.status(200).json({
       success: true,
-      shippingAddresses: user.shippingAddresses,
+      shippingAddress: user.shippingAddress,
     })
   } catch (error) {
     console.error("Delete shipping address error:", error)

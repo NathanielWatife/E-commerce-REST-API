@@ -70,7 +70,7 @@ export const signup = async (req, res) => {
 		generateTokenAndSetCookie(res, user._id)
 		return res.status(201).json({
 			success: true,
-			message: "User created. Please cehck your email to verify your account.",
+			message: "User created. Please check your email to verify your account.",
 			user: {
 				id: user._id,
 				name: user.name,
@@ -78,5 +78,264 @@ export const signup = async (req, res) => {
 				isVerified: user.isVerified
 			}
 		})
+	} catch (error) {
+		console.log("Signup error: ", error);
+		return res.status(500).json({
+			success: false,
+			message: "Server error",
+			error: process.env.NODE_ENV === "development" ? error.message : undefined
+		})
 	}
-}
+};
+
+
+
+// login 
+export const login = async (req, res) => {
+	try{
+		const user = await User.findOne({email}).select("+password")
+		if (!user) {
+			return res.status(401).json({
+				success: false,
+				message: "Invalid email or password"
+			});
+		}
+
+		const isMatch = await bcryptjs.compare(password, user.password)
+		if (!isMatch) {
+			return res.status(401).json({
+				success: false,
+				message: "Invalid email or password"
+			})
+		}
+
+		// get client info login notification
+		const loginEmailCotent = generateLoginNotificationEmail(user.name.getClientInfo)
+		await sendEmail({
+			email: user.email,
+			subject: "New Login to your account",
+			message: loginEmailContent,
+		});
+
+		// update lastlogin
+		user.lastlogin = Date.now()
+		await user.save()
+
+		// generate token
+		generateTokenAndSetCookie(res, user._id);
+
+		return res.status(200).json({
+			success: true,
+			message: "Logged in successfully",
+			user: {
+				id: user._id,
+				name: user.name,
+				email: user.email,
+				isVerified: user.isVerified
+			}
+		});
+	} catch (error) {
+		console.error("Logn error", error)
+		return res.status(500).json({
+			success: false,
+			message: "Server error",
+			error: process.env.NODE_ENV === "development" ? error.message : undefined
+		})
+	}
+};
+
+
+
+// logout
+export const logout = async (req, res) => {
+	try {
+	  res.clearCookie("token")
+	  return res.status(200).json({
+		success: true,
+		message: "Logged out successfully",
+	  })
+	} catch (error) {
+	  console.error("Logout Error:", error)
+	  return res.status(500).json({
+		success: false,
+		message: "Internal server error",
+	  })
+	}
+  }
+  
+
+// verify newly register email
+export const verifyEmail = async (req, res) => {
+	const { email, token } = req.body
+  
+	try {
+	  const user = await User.findOne({
+		email,
+		verificationToken: token,
+		verificationTokenExpiredAt: { $gt: Date.now() },
+	  })
+  
+	  if (!user) {
+		return res.status(400).json({
+		  success: false,
+		  message: "Invalid or expired verification token",
+		})
+	  }
+  
+	  // Update user verification status
+	  user.isVerified = true
+	  user.verificationToken = undefined
+	  user.verificationTokenExpiredAt = undefined
+	  await user.save()
+  
+	  // Send welcome email after successful verification
+	  const welcomeEmailContent = generateWelcomeEmail(user.name)
+	  await sendEmail({
+		email: user.email,
+		subject: "Welcome to Our Store!",
+		message: welcomeEmailContent,
+	  })
+  
+	  return res.status(200).json({
+		success: true,
+		message: "Email verified successfully",
+	  })
+	} catch (error) {
+	  console.error("Email verification error:", error)
+	  return res.status(500).json({
+		success: false,
+		message: "Internal server error",
+		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+	  })
+	}
+  }
+  
+
+// resend email verification if requested
+  export const resendVerificationEmail = async (req, res) => {
+	const { email } = req.body
+  
+	try {
+	  const user = await User.findOne({ email })
+	  if (!user) {
+		return res.status(404).json({
+		  success: false,
+		  message: "User not found",
+		})
+	  }
+  
+	  if (user.isVerified) {
+		return res.status(400).json({
+		  success: false,
+		  message: "Email is already verified",
+		})
+	  }
+  
+	  // Generate new verification token
+	  const verificationToken = generateRandomToken()
+	  user.verificationToken = verificationToken
+	  user.verificationTokenExpiredAt = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+	  await user.save()
+  
+	  // Send verification email
+	  const emailContent = generateVerificationEmail(user.name, verificationToken)
+	  await sendEmail({
+		email,
+		subject: "Verify Your Email Address",
+		message: emailContent,
+	  })
+  
+	  return res.status(200).json({
+		success: true,
+		message: "Verification email sent successfully",
+	  })
+	} catch (error) {
+	  console.error("Resend verification email error:", error)
+	  return res.status(500).json({
+		success: false,
+		message: "Internal server error",
+		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+	  })
+	}
+  }
+  
+
+// forgot password
+  export const forgotPassword = async (req, res) => {
+	const { email } = req.body
+  
+	try {
+	  const user = await User.findOne({ email })
+	  if (!user) {
+		return res.status(404).json({
+		  success: false,
+		  message: "User not found",
+		})
+	  }
+  
+	  // Generate reset token
+	  const resetToken = generateRandomToken()
+	  user.resetPasswordToken = resetToken
+	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000 // 1 hour
+	  await user.save()
+  
+	  // Send password reset email
+	  const emailContent = generatePasswordResetEmail(user.name, resetToken)
+	  await sendEmail({
+		email,
+		subject: "Password Reset Request",
+		message: emailContent,
+	  })
+  
+	  return res.status(200).json({
+		success: true,
+		message: "Password reset email sent successfully",
+	  })
+	} catch (error) {
+	  console.error("Forgot password error:", error)
+	  return res.status(500).json({
+		success: false,
+		message: "Internal server error",
+		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+	  })
+	}
+  }
+  
+// reset user password
+  export const resetPassword = async (req, res) => {
+	const { email, token, newPassword } = req.body
+  
+	try {
+	  const user = await User.findOne({
+		email,
+		resetPasswordToken: token,
+		resetPasswordExpiredAt: { $gt: Date.now() },
+	  })
+  
+	  if (!user) {
+		return res.status(400).json({
+		  success: false,
+		  message: "Invalid or expired reset token",
+		})
+	  }
+  
+	  // Hash new password and update user
+	  const hashPassword = await bcryptjs.hash(newPassword, 12)
+	  user.password = hashPassword
+	  user.resetPasswordToken = undefined
+	  user.resetPasswordExpiredAt = undefined
+	  await user.save()
+  
+	  return res.status(200).json({
+		success: true,
+		message: "Password reset successfully",
+	  })
+	} catch (error) {
+	  console.error("Reset password error:", error)
+	  return res.status(500).json({
+		success: false,
+		message: "Internal server error",
+		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+	  })
+	}
+  }
