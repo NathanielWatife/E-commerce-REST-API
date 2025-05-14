@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import { connectDB } from "./config/db.js";
 import cookieParser from "cookie-parser";
 import authRoutes  from "./routes/authRoutes.js";
@@ -10,11 +11,13 @@ const app = express();
 
 // middleware
 app.use(express.json());
-app.use.apply(cookieParser());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "*",
-  credentials: true
-}))
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    credentials: true
+  })
+)
 
 //  routes
 app.use("/api/auth", authRoutes);
@@ -22,13 +25,13 @@ app.use("/api/users", userRoutes);
 
 
 // error handling middleware
-app.user((err, req, res, next) => {
+app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode
   res.status(statusCode)
   res.json({
     success: false,
     message: err.message,
-    stack: process.env.NODE_ENV === "production" ? null : err.stack
+    stack: process.env.NODE_ENV === "development" ? null : err.stack
   })
 })
 

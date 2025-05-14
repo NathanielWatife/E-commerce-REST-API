@@ -46,7 +46,7 @@ export const signup = async (req, res) => {
 		}
 		// hash the password
 		const hashPassword = await bcryptjs.hash(password, 12);
-		const verificationToken = generateRandonToken()
+		const verificationToken = generateRandomToken();
 
 		// clear user
 		const user = new User({
@@ -92,8 +92,18 @@ export const signup = async (req, res) => {
 
 // login 
 export const login = async (req, res) => {
-	try{
-		const user = await User.findOne({email}).select("+password")
+	// validate user inputs
+	const errors = validationResult(req)
+	if (!errors.isEmpty()) {
+		return res.status(400).json({
+			success: false,
+			errors: errors.array()
+		})
+	}
+
+	const { email, password } = req.body;
+	try {
+		const user = await User.findOne({ email }).select("+password")
 		if (!user) {
 			return res.status(401).json({
 				success: false,
@@ -109,12 +119,23 @@ export const login = async (req, res) => {
 			})
 		}
 
+		// if user is verified
+		if(!user.isVerified) {
+			return res.status(403).json({
+				success: false,
+				message: "Please verify your email before logging in"
+			})
+		}
+
+		// get client informations for login notifications
+		const clientInfo = getClientInfo(req)
+
 		// get client info login notification
-		const loginEmailCotent = generateLoginNotificationEmail(user.name.getClientInfo)
+		const loginEmailContent = generateLoginNotificationEmail(user.name, clientInfo)
 		await sendEmail({
 			email: user.email,
 			subject: "New Login to your account",
-			message: loginEmailContent,
+			message: loginEmailContent
 		});
 
 		// update lastlogin
@@ -135,7 +156,7 @@ export const login = async (req, res) => {
 			}
 		});
 	} catch (error) {
-		console.error("Logn error", error)
+		console.error("Login error", error)
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
