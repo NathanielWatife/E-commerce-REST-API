@@ -76,7 +76,7 @@ export const signup = async (req, res) => {
 				name: user.name,
 				email: user.email,
 				isVerified: user.isVerified
-			}
+			},
 		})
 	} catch (error) {
 		console.log("Signup error: ", error);
@@ -130,7 +130,7 @@ export const login = async (req, res) => {
 		// get client informations for login notifications
 		const clientInfo = getClientInfo(req)
 
-		// get client info login notification
+		// send client info login notification
 		const loginEmailContent = generateLoginNotificationEmail(user.name, clientInfo)
 		await sendEmail({
 			email: user.email,
@@ -143,11 +143,12 @@ export const login = async (req, res) => {
 		await user.save()
 
 		// generate token
-		generateTokenAndSetCookie(res, user._id);
+		const token = generateTokenAndSetCookie(res, user._id);
 
 		return res.status(200).json({
 			success: true,
 			message: "Logged in successfully",
+			token: token,
 			user: {
 				id: user._id,
 				name: user.name,
@@ -216,7 +217,7 @@ export const verifyEmail = async (req, res) => {
 		subject: "Welcome to Our Store!",
 		message: welcomeEmailContent,
 	  })
-  
+
 	  return res.status(200).json({
 		success: true,
 		message: "Email verified successfully",
