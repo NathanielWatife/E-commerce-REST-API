@@ -1,5 +1,5 @@
 # E-commerce-REST-API
-An E-commerce back-end using Node.js, Express.js
+These is an E-commerce API developed with using Nodejs/Express.js, mongoDB as the database. 
 
 ## installation Ruquirements
     ### cd into working directory
@@ -8,13 +8,15 @@ An E-commerce back-end using Node.js, Express.js
             npm init -y
         ```
 
-    ```
-        nodejs
-        expressjs
-        nodemon
-        dotenv
-        mongoose
-    ```
+        -- Install packages
+        ```
+            npm install
+        ```
+        -- Install development tool (Nodemon)
+        ```
+            npm install --save-dev nodemon
+        ```
+
 ### Add this to packages.json inside scripts
     -- "start": "nodemon index.js",
 
@@ -23,5 +25,5 @@ An E-commerce back-end using Node.js, Express.js
 
 
 ### Created routes and Models folder
-    --- Added cart.js, product.js, user.js, order.js
+    --- Added cart.js, product.js, user.js, order.js, category.js
     
