@@ -1,4 +1,5 @@
 import express from "express";
+import { specs, swaggerUi } from "./swagger.js"
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import authRoutes  from "./routes/authRoutes.js";
@@ -13,6 +14,8 @@ import cors from "cors";
 
 dotenv.config();
 const app = express();
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs))
 
 // middleware
 app.use(express.json());
