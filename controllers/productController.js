@@ -1,5 +1,5 @@
-import { Product } from "../models/Product";
-import { Category } from "../models/Category";
+import { Product } from "../models/Product.js";
+import { Category } from "../models/Category.js";
 import { validationResult } from "express-validator";
 
 

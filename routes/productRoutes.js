@@ -1,5 +1,5 @@
 import express from "express";
-import { getProduct, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProducts } from "../controllers/productController.js";
+import { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct } from "../controllers/productController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import { body } from "express-validator";
 
@@ -26,8 +26,8 @@ const validationProductReview = [
 
 
 // routes
-router.route("/").get(getProduct).post(protect, admin, validationProductCreate, createProduct);
-router.route("/top").get(getTopProducts);
+router.route("/").get(getProducts).post(protect, admin, validationProductCreate, createProduct);
+router.route("/top").get(getTopProduct);
 router.route("/:id").get(getProductById).put(protect, admin, updateProduct).delete(protect, admin, deleteProduct);
 router.route("/:id/reviews").post(protect, admin, validationProductReview, createProductReview)
 
