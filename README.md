@@ -24,6 +24,8 @@ These is an E-commerce API developed with using Nodejs/Express.js, mongoDB as th
     -- https://cloud.mongodb.com/
 
 
-### Created routes and Models folder
+### CreatedModels folder
     --- Added cart.js, product.js, user.js, order.js, category.js
-    
+
+    - User.js
+        - added address schema
