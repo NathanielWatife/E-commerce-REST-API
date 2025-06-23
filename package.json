@@ -12,6 +12,9 @@
     "type": "git",
     "url": "git+https://github.com/NathanielWatife/E-commerce-REST-API.git"
   },
+  "resolutions": {
+    "debug": "^4.3.4"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
