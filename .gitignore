@@ -35,3 +35,5 @@ bower_components/
 # Miscellaneous
 *.swp
 *.swo
+# Local Netlify folder
+.netlify
