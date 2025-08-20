@@ -31,16 +31,21 @@ const addressSchema = new mongoose.Schema({
 
 const userSchema = new mongoose.Schema(
     {
-        name: {
+        firstName: {
             type: String, 
             required: true, 
-            unique: true,
+        },
+        lastName: {
+            type: String,
+            required: true,
         },
         email : {
             type: String, 
             required: true, 
             unique: true,
-            validate: [validator.isEmail, "Provide your email"]
+            validate: [validator.isEmail, "Provide your email"],
+            lowercase: true,
+            trim: true
         },
         password: {
             type: String, 
@@ -49,26 +54,56 @@ const userSchema = new mongoose.Schema(
             select: false,
         },
         phoneNumber: {
-            type: String
+            type: String,
+            required: true,
+            trim: true
         },
         avatar: {
             type: String,
             default: "default-avatar.jpg"
         },
-        billingAddress: addressSchema,
-        shippingAddress: addressSchema,
+        billingAddress: [addressSchema],
+        shippingAddress: [addressSchema],
         role: {
             type: String,
-            enum: ["user", "admin"],
+            enum: ["user", "admin", "super-admin"],
             default: "user"
         },
         lastlogin: { type: Date, default: Date.now },
-        isVerified: {type: Boolean, default:false},
+        loginHistory: [{
+            ip: String,
+            device: String,
+            time: Date
+        }],
+        isVerified: { type: Boolean, default:false },
+        isActive: {
+            type: String,
+            enum: ["active", "suspend", "deactivated"],
+            default: "active"
+        },
         resetPasswordToken: String,
         resetPasswordExpiredAt: Date,
         verificationToken: String,
         verificationTokenExpiredAt: Date,
-    }, {timestamps: true},
+        lastpasswordChangedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }, {
+        timestamps: true,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true },
+    },
 );
+//  virtuals for full name
+userSchema.virtual('fullName').get(function() {
+    return `${this.firstName} ${this.lastName}`;
+});
+
+// index for better query performance
+userSchema.index({ email: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ createdAt: 1 });
 
 export const User = mongoose.model("User", userSchema);
