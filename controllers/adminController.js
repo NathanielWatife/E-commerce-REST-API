@@ -185,3 +185,157 @@ export const updateAdminUser = async (req, res) => {
         });
     }
 };
+
+
+// bulk user actions private(admin)
+export const bulkUserActions = async (req, res) => {
+    const { action, userIds } = req.body;
+
+    if (!action || !userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Action and user IDs are required",
+        });
+    }
+
+    try {
+        let update;
+        let message;
+
+        switch (action) {
+            case "activate":
+                update = { isActive: true, accountStatus: "active" };
+                message = "User activated successfully";
+                break;
+            case "deactivate":
+                update = { isActive: false, accountStatus: "deactivated" };
+                message = "User deactivated successfully";
+                break;
+            case "suspend":
+                update = { isActive: false, accountStatus: "suspended" };
+                message = "User suspended successfully";
+                break;
+            case "delete":
+                // prevent deletion of super-admin accounts
+                const superAdmins = await User.countDocuments({
+                    _id: { $in: userIds },
+                    role: "super-admin"
+                });
+                if (superAdmins > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Cannot delete super-admin accounts, contact support for assistance"
+                    });
+
+                }
+                await User.deleteMany({
+                    _id: { $in: userIds },
+                    role: { $ne: "super-admin" }
+                });
+                return res.status(200).json({
+                    sucess: true,
+                    message: "Users deleted successfully"
+                });
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid action"
+                });    
+        }
+        
+        const result = await User.updateMany(
+            {
+                _id: { $in: userIds },
+                // prevent modification of super-admin unless current is actually superadmin
+                ...(action !== "delete" ? { role: { $ne: "super-admin" } } : {})
+            },
+        );
+        return res.status(200).json({
+            success: true,
+            message,
+            updatedCount: result.modifiedCount,
+        });
+    } catch (error) {
+        console.error("Bulk user actions error:", error);
+        return res.status(500).json({
+            sucess: false,
+            message: "Server error",
+            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        });
+    }
+};
+
+
+// user activity logs private(admin)
+export const getUserActivityLogs = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select("loginHistory lastLogin");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+
+        }
+        return res.status(200).json({
+            success: true,
+            user: {
+                _id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                lastLogin: user.lastLogin,
+                loginHistory: user.loginHistory.slice(-20).reverse()
+            }
+        });
+    } catch (error) {
+        console.error("Get user activity logs error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        });
+    }
+};
+
+
+// export user data private(admin)
+export const exportUserData = async (req, res) => {
+    try {
+        const user = await User.find({})
+            .select("firstName lastName email phoneNumber role isVerified isActive accountStatus lastLogin createdAt")
+            .sort({ createdAt: -1 });
+        
+            // convert exports to csv format
+            const csvData = users.map(user => ({
+                Name: `${user.firstName} ${user.lastName}`,
+                Email: user.email,
+                Role: user.role,
+                Verified: user.isVerified ? "Yes" : "No",
+                Active: user.isActive ? "Yes" : "No",
+                Status: user.accountStatus,
+                'Last Login': user.lastLogin,
+                'Created At': user.createdAt
+            }));
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="user_data.csv"');
+
+            // csv conversion
+            const csv = [
+                Object.keys(csvData[0]).join(','),
+                ...csvData.map(row => Object.values(row).join(','))
+            ].join('\n');
+
+            res.send(csv);
+    } catch (error) {
+        console.error("Export user data error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        });
+    }
+};
