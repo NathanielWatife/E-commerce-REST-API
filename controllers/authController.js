@@ -138,6 +138,17 @@ export const login = async (req, res) => {
 			message: loginEmailContent
 		});
 
+		user.loginHistory.push({
+			ip: clientInfo.ip,
+			device: clientInfo.device,
+			time: new Date()
+		});
+
+		//  keep last 50 logins
+		if(user.loginHistory.length > 50){
+			user.loginHistory = user.loginHistory.slice(-50);
+		}
+
 		// update lastlogin
 		user.lastlogin = Date.now()
 		await user.save()

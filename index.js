@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import authRoutes  from "./routes/authRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import productRoutes from './routes/productRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
@@ -19,13 +20,14 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN,
     credentials: true
   })
 )
 
 //  routes
 app.use("/api/auth", authRoutes)
+app.use("/api/admin", adminRoutes)
 app.use("/api/users", userRoutes)
 app.use("/api/products", productRoutes)
 app.use("/api/categories", categoryRoutes)
