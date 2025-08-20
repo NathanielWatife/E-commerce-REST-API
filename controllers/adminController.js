@@ -116,4 +116,72 @@ export const getAdminUsers = async (req, res) => {
             error: process.env.NODE_ENV === "development" ? error.message : undefined,
         });
     }
-}
+};
+
+// update user role private routes(admin)
+export const updateAdminUser = async (req, res) => {
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            errors: errors.array()
+        });
+    }
+
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user){
+            return res.status(404).json({
+                succes: false,
+                message: "User not found as admin check details provided or contact support"
+            });
+        }
+
+        // prevent modification of super-admin unless current is actually superadmin
+        if(user.role === "super-admin" && req.user.role !== "super-admin") {
+            return res.status(403).json({
+                succes: false,
+                message: "Cannot modify super-admin account, Contact support for assistance",
+            });
+        }
+
+        const { role, accountStatus, isActive, isVerified } = req.body;
+
+        // update user fields
+        if (role && ["user", "admin", "super-admin"].includes(role)) {
+            user.role = role;
+        }
+        if (accountStatus && ["active", "suspended", "deactivated"].includes(accountStatus)) {
+            user.accountStatus = accountStatus;
+        }
+        if (isActive !== undefined) user.isActive = isActive;
+        if (isVerified !== undefined) user.isVerified = isVerified;
+
+        const updatedUser = await user.save();
+
+        return res.status(200).json({
+            success: true,
+            user: {
+                _id: updatedUser._id,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                isVerified: updatedUser.isVerified,
+                isActive: updatedUser.isActive,
+                accountStatus: updatedUser.accountStatus,
+                phoneNumber: updatedUser.phoneNumber,
+                lastLogin: updatedUser.lastLogin,
+                createdAt: updatedUser.createdAt,
+            }
+        });
+    } catch (error) {
+        console.error("Update admin user error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        });
+    }
+};
