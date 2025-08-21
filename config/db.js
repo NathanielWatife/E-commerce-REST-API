@@ -37,7 +37,12 @@ export const connectDB = async () => {
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
-            family: 4
+            family: 4,
+            // Add production-specific options
+            ...(process.env.NODE_ENV === 'production' && {
+                retryWrites: true,
+                w: 'majority'
+            })
         };
 
         logger.info('Attempting to connect to Database...', {
