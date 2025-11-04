@@ -21,8 +21,11 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true,
+    // allow preflight cache for 600 seconds
+    optionsSuccessStatus: 200,
+    maxAge: 600,
   })
 )
 
@@ -44,7 +47,8 @@ app.use((err, req, res, next) => {
   res.json({
     success: false,
     message: err.message,
-    stack: process.env.NODE_ENV === "development" ? null : err.stack
+    // include stack trace in development only
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined
   })
 })
 
@@ -52,7 +56,7 @@ app.use((err, req, res, next) => {
 // not found error middleware handling
 app.use((req, res, next) => {
   res.status(404).json({
-    sucess: false,
+    success: false,
     message: `Not found - ${req.originalUrl}`
   })
 })

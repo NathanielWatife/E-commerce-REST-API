@@ -8,7 +8,7 @@ import logger from "../utils/logger.js";
 export const getCart = async(req, res) => {
 	try {
 		let cart = await Cart.findOne({user: req.user._id}).populate({
-			path: "Items.product",
+			path: "items.product",
 			select: "name image price countInStock",
 		})
 
@@ -24,13 +24,13 @@ export const getCart = async(req, res) => {
 		}
 
 		return res.status(201).json({
-			succes: true,
+			success: true,
 			cart,
 		})
 	} catch (error) {
 		logger.error("Get cart error:", error)
 		return res.status(500).json({
-			succes: false,
+			success: false,
 			message: "Server error",
 			error: process.env.NODE_ENV === "development" ? error.message: undefined
 		})
@@ -89,13 +89,13 @@ export const addToCart = async (req, res) => {
 			cart.items.push({
 				product: productId,
 				quantity,
-				proce: product.price,
+				price: product.price,
 			})
 		}
 
 		// calculate total price
 		cart.totalPrice = cart.items.reduce((total, item) => {
-			return total + item.price * item.quantity
+			return total + (item.price || 0) * item.quantity
 		}, 0)
 		await cart.save()
 
@@ -170,8 +170,8 @@ export const updateCartItem = async (req, res) => {
 			})
 		}
 
-		// update the quatntity
-		cart.Items[itemIndex].quantity = quantity
+	// update the quantity
+	cart.items[itemIndex].quantity = quantity
 
 		// calcute the total price again
 		cart.totalPrice = cart.items.reduce((total, item) => {
@@ -234,7 +234,7 @@ export const removeFromCart = async (req, res) => {
 		// populate product details for response
 		await cart.populate({
 			path: "items.product",
-			select: "name imag price countInStock",
+			select: "name image price countInStock",
 		});
 		return res.status(200).json({
 			success: true,
@@ -245,7 +245,7 @@ export const removeFromCart = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.messaage : undefined
+			error: process.env.NODE_ENV === "development" ? error.message : undefined
 		});
 	}
 };

@@ -44,7 +44,7 @@ export const getProducts = async (req, res) => {
         logger.error("Error getting Products:", error)
         return res.status(500).json({
             success: false,
-            message: "Server errorr",
+            message: "Server error",
             error: process.env.NODE_ENV === "development" ? error.message : undefined
         })
     }
@@ -66,7 +66,7 @@ export const getProductById = async (req, res) => {
 
         if (!product){
             return res.status(404).json({
-                succes: false,
+                success: false,
                 message: "Product not found"
             })
         }
@@ -100,11 +100,11 @@ export const createProduct = async (req, res) => {
         // check if the category exists
         const categoryExists = await Category.findById(category)
         if (!categoryExists) {
-            return res.status(400).json({
-                succes: false,
-                message: "Invalid category"
-            })
-        }
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid category"
+                })
+            }
         const product = new Product({
             name,
             price,
@@ -144,7 +144,7 @@ export const updateProduct = async (req, res) => {
         })
     }
     try {
-        const { name, price, description, image, brand, cartegory, countInStock, isFeatured } = req.body;
+        const { name, price, description, image, brand, category, countInStock, isFeatured } = req.body;
 
         const product = await Product.findById(req.params.id)
 
@@ -155,9 +155,9 @@ export const updateProduct = async (req, res) => {
             })
         }
 
-        // we check if the category exists it it's being updated
-        if (category && category !== product.categpry.toString()) {
-            const cartegoryExists = await Category.findById(category)
+        // we check if the category exists if it's being updated
+        if (category && category !== product.category.toString()) {
+            const categoryExists = await Category.findById(category)
             if (!categoryExists) {
                 return res.status(400).json({
                     success: false,
@@ -175,7 +175,7 @@ export const updateProduct = async (req, res) => {
         product.countInStock = countInStock !== undefined ? countInStock : product.countInStock
         product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured
 
-        const updatedProduct = await products.save()
+    const updatedProduct = await product.save()
 
         return res.status(200).json({
             success: true,
@@ -228,7 +228,7 @@ export const createProductReview = async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         return res.status(400).json({
-            succes: false,
+            success: false,
             errors: errors.array()
         });
     }
@@ -250,7 +250,7 @@ export const createProductReview = async (req, res) => {
         if (alreadyReviewed) {
             return res.status(400).json({
                 success: false,
-                messag: "Product already reviewed"
+                message: "Product already reviewed"
             });
         }
 

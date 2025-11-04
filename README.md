@@ -1,31 +1,63 @@
 # E-commerce-REST-API
-These is an E-commerce API developed with using Nodejs/Express.js, mongoDB as the database. 
+E-commerce REST API built with Node.js, Express and MongoDB.
 
-## installation Ruquirements
-    ### cd into working directory
-        -- Initialize working directory
-        ```
-            npm init -y
-        ```
+## Quickstart — run backend + frontend in development
 
-        -- Install packages
-        ```
-            npm install
-        ```
-        -- Install development tool (Nodemon)
-        ```
-            npm install --save-dev nodemon
-        ```
+1. Backend
 
-### Add this to packages.json inside scripts
-    -- "start": "nodemon index.js",
+     - Install dependencies (already done):
 
-## Create connection to mongodb database
-    -- https://cloud.mongodb.com/
+         npm install
 
+     - Create a `.env` in the backend root and set at minimum:
 
-### CreatedModels folder
-    --- Added cart.js, product.js, user.js, order.js, category.js
+         MONGO_URI=your_mongodb_connection_string
+         JWT_SECRET=some_long_secret
+         EMAIL_HOST=...
+         EMAIL_PORT=...
+         EMAIL_USER=...
+         EMAIL_PASSWORD=...
+         EMAIL_FROM=...
+         EMAIL_FROM_NAME=...
+         CORS_ORIGIN=http://localhost:3000
 
-    - User.js
-        - added address schema
+     - Start backend (dev):
+
+         npm run dev
+
+     The backend will default CORS origin to `http://localhost:3000` if `CORS_ORIGIN` is not set.
+
+2. Frontend (raddazle)
+
+     - Change to the frontend folder and install:
+
+         cd raddazle
+         npm install
+
+     - By default the frontend uses a Vite dev server on port 3000 and proxies `/api` to the backend (see `vite.config.js`).
+
+     - Optionally set the API base in the frontend using an env var `VITE_API_URL` (e.g. `VITE_API_URL=http://localhost:5000/api`). If unset the frontend will default to `http://localhost:5000/api`.
+
+     - Start frontend dev server:
+
+         npm run dev
+
+Notes about authentication and cookies
+
+- The backend sets an httpOnly cookie for the JWT. The frontend axios instance is configured with `withCredentials: true` so cookies are sent on requests.
+- For token-in-header flows the frontend still reads a local token from localStorage and sets the `Authorization` header. Both approaches are supported.
+- Ensure `CORS_ORIGIN` on the backend includes your frontend host when running in production.
+
+Useful files
+
+- `index.js` — backend entry (CORS config and routes)
+- `utils/logger.js` — centralized logging (winston)
+- `raddazle/vite.config.js` — frontend dev proxy for `/api` -> backend
+- `raddazle/src/services/api.js` — axios instance (now uses withCredentials)
+
+Next steps you can do (optional)
+
+- Add request-level logging (morgan or express-winston).
+- Add log rotation (winston-daily-rotate-file) for production.
+- Secure production cookies further (set proper domain, secure=true and sameSite as needed).
+

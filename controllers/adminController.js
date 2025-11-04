@@ -5,8 +5,8 @@ import logger from "../utils/logger.js";
 // get admin dashboarb statistics admin/private
 export const getDashBoardStatistics = async (req, res) => {
     try {
-        // get total users
-        const totalUsers = await User.countDocuments.countDocuments();
+    // get total users
+    const totalUsers = await User.countDocuments();
         const totalAdmins = await User.countDocuments({ role: {
             $in: ["admin", "super-admin"]
         } });
@@ -91,7 +91,7 @@ export const getAdminUsers = async (req, res) => {
             .skip(pageSize * (page -1));
 
         return res.status(200).json({
-            sucess: true,
+            success: true,
             users,
             pagination: {
                 page,
@@ -134,7 +134,7 @@ export const updateAdminUser = async (req, res) => {
 
         if (!user){
             return res.status(404).json({
-                succes: false,
+                success: false,
                 message: "User not found as admin check details provided or contact support"
             });
         }
@@ -142,7 +142,7 @@ export const updateAdminUser = async (req, res) => {
         // prevent modification of super-admin unless current is actually superadmin
         if(user.role === "super-admin" && req.user.role !== "super-admin") {
             return res.status(403).json({
-                succes: false,
+                success: false,
                 message: "Cannot modify super-admin account, Contact support for assistance",
             });
         }
@@ -234,7 +234,7 @@ export const bulkUserActions = async (req, res) => {
                     role: { $ne: "super-admin" }
                 });
                 return res.status(200).json({
-                    sucess: true,
+                    success: true,
                     message: "Users deleted successfully"
                 });
             default:
@@ -250,6 +250,7 @@ export const bulkUserActions = async (req, res) => {
                 // prevent modification of super-admin unless current is actually superadmin
                 ...(action !== "delete" ? { role: { $ne: "super-admin" } } : {})
             },
+            update
         );
         return res.status(200).json({
             success: true,
@@ -259,7 +260,7 @@ export const bulkUserActions = async (req, res) => {
     } catch (error) {
         logger.error("Bulk user actions error:", error);
         return res.status(500).json({
-            sucess: false,
+            success: false,
             message: "Server error",
             error: process.env.NODE_ENV === "development" ? error.message : undefined,
         });
@@ -305,32 +306,36 @@ export const getUserActivityLogs = async (req, res) => {
 // export user data private(admin)
 export const exportUserData = async (req, res) => {
     try {
-        const user = await User.find({})
+        const users = await User.find({})
             .select("firstName lastName email phoneNumber role isVerified isActive accountStatus lastLogin createdAt")
             .sort({ createdAt: -1 });
-        
-            // convert exports to csv format
-            const csvData = users.map(user => ({
-                Name: `${user.firstName} ${user.lastName}`,
-                Email: user.email,
-                Role: user.role,
-                Verified: user.isVerified ? "Yes" : "No",
-                Active: user.isActive ? "Yes" : "No",
-                Status: user.accountStatus,
-                'Last Login': user.lastLogin,
-                'Created At': user.createdAt
-            }));
 
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', 'attachment; filename="user_data.csv"');
+        // convert exports to csv format
+        const csvData = users.map(u => ({
+            Name: `${u.firstName} ${u.lastName}`,
+            Email: u.email,
+            Role: u.role,
+            Verified: u.isVerified ? "Yes" : "No",
+            Active: u.isActive ? "Yes" : "No",
+            Status: u.accountStatus,
+            'Last Login': u.lastLogin,
+            'Created At': u.createdAt
+        }));
 
-            // csv conversion
-            const csv = [
-                Object.keys(csvData[0]).join(','),
-                ...csvData.map(row => Object.values(row).join(','))
-            ].join('\n');
+        if (csvData.length === 0) {
+            return res.status(200).send('');
+        }
 
-            res.send(csv);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="user_data.csv"');
+
+        // csv conversion
+        const csv = [
+            Object.keys(csvData[0]).join(','),
+            ...csvData.map(row => Object.values(row).join(','))
+        ].join('\n');
+
+        res.send(csv);
     } catch (error) {
         logger.error("Export user data error:", error);
         return res.status(500).json({
