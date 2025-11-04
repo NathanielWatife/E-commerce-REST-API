@@ -3,6 +3,7 @@ import bcryptjs from "bcryptjs";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
 import { validationResult } from "express-validator";
 import { sendEmail, generateVerificationEmail, generatePasswordResetEmail, generateWelcomeEmail, generateLoginNotificationEmail } from "../utils/sendEmail.js";
+import logger from "../utils/logger.js";
 
 
 // helper function to generate random token
@@ -79,7 +80,7 @@ export const signup = async (req, res) => {
 			},
 		})
 	} catch (error) {
-		console.log("Signup error: ", error);
+		logger.error("Signup error:", error)
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
@@ -168,7 +169,7 @@ export const login = async (req, res) => {
 			}
 		});
 	} catch (error) {
-		console.error("Login error", error)
+		logger.error("Login error", error)
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
@@ -216,8 +217,8 @@ export const verifyEmail = async (req, res) => {
 		success: true,
 		message: "Email verified successfully",
 	  })
-	} catch (error) {
-	  console.error("Email verification error:", error)
+		} catch (error) {
+			logger.error("Email verification error:", error)
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
@@ -265,8 +266,8 @@ export const verifyEmail = async (req, res) => {
 		success: true,
 		message: "Verification email sent successfully",
 	  })
-	} catch (error) {
-	  console.error("Resend verification email error:", error)
+		} catch (error) {
+			logger.error("Resend verification email error:", error)
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
@@ -283,8 +284,8 @@ export const logout = async (req, res) => {
 		success: true,
 		message: "Logged out successfully",
 	  })
-	} catch (error) {
-	  console.error("Logout Error:", error)
+		} catch (error) {
+			logger.error("Logout Error:", error)
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
@@ -324,8 +325,8 @@ export const forgotPassword = async (req, res) => {
 		success: true,
 		message: "Password reset email sent successfully",
 	  })
-	} catch (error) {
-	  console.error("Forgot password error:", error)
+		} catch (error) {
+			logger.error("Forgot password error:", error)
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
@@ -363,8 +364,8 @@ export const forgotPassword = async (req, res) => {
 		success: true,
 		message: "Password reset successfully",
 	  })
-	} catch (error) {
-	  console.error("Reset password error:", error)
+		} catch (error) {
+			logger.error("Reset password error:", error)
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",

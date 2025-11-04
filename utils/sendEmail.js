@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer"
+import logger from "./logger.js"
 
 // Send an email using nodemailer
 export const sendEmail = async (options) => {
@@ -26,7 +27,7 @@ export const sendEmail = async (options) => {
     await transporter.sendMail(mailOptions)
     return true
   } catch (error) {
-    console.error("Email sending error:", error)
+    logger.error("Email sending error:", error)
     return false
   }
 }

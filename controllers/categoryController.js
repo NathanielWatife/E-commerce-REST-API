@@ -1,5 +1,6 @@
 import { Category } from "../models/Category.js"
 import { validationResult } from "express-validator"
+import logger from "../utils/logger.js"
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -13,7 +14,7 @@ export const getCategories = async (req, res) => {
       categories,
     })
   } catch (error) {
-    console.error("Get categories error:", error)
+    logger.error("Get categories error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -41,7 +42,7 @@ export const getCategoryById = async (req, res) => {
       category,
     })
   } catch (error) {
-    console.error("Get category by ID error:", error)
+    logger.error("Get category by ID error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -87,7 +88,7 @@ export const createCategory = async (req, res) => {
       category: createdCategory,
     })
   } catch (error) {
-    console.error("Create category error:", error)
+    logger.error("Create category error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -143,7 +144,7 @@ export const updateCategory = async (req, res) => {
       category: updatedCategory,
     })
   } catch (error) {
-    console.error("Update category error:", error)
+    logger.error("Update category error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -173,7 +174,7 @@ export const deleteCategory = async (req, res) => {
       message: "Category removed",
     })
   } catch (error) {
-    console.error("Delete category error:", error)
+    logger.error("Delete category error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",

@@ -1,6 +1,7 @@
 import { User } from "../models/User.js"
 import bcryptjs from "bcryptjs"
 import { validationResult } from "express-validator"
+import logger from "../utils/logger.js"
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -32,7 +33,7 @@ export const getUserProfile = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error("Get user profile error:", error)
+    logger.error("Get user profile error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -88,7 +89,7 @@ export const updateUserProfile = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error("Update user profile error:", error)
+    logger.error("Update user profile error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -131,7 +132,7 @@ export const updateUserAvatar = async (req, res) => {
       avatar: updatedUser.avatar,
     })
   } catch (error) {
-    console.error("Update user avatar error:", error)
+    logger.error("Update user avatar error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -196,7 +197,7 @@ export const addBillingAddress = async (req, res) => {
       billingAddress: user.billingAddress,
     })
   } catch (error) {
-    console.error("Add billing address error:", error)
+    logger.error("Add billing address error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -261,7 +262,7 @@ export const updateBillingAddress = async (req, res) => {
       billingAddress: user.billingAddress,
     })
   } catch (error) {
-    console.error("Update billing address error:", error)
+    logger.error("Update billing address error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -314,7 +315,7 @@ export const deleteBillingAddress = async (req, res) => {
       billingAddress: user.billingAddress,
     })
   } catch (error) {
-    console.error("Delete billing address error:", error)
+    logger.error("Delete billing address error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -379,7 +380,7 @@ export const addShippingAddress = async (req, res) => {
       shippingAddress: user.shippingAddress,
     })
   } catch (error) {
-    console.error("Add shipping address error:", error)
+    logger.error("Add shipping address error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -444,7 +445,7 @@ export const updateShippingAddress = async (req, res) => {
       shippingAddress: user.shippingAddress,
     })
   } catch (error) {
-    console.error("Update shipping address error:", error)
+    logger.error("Update shipping address error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -497,7 +498,7 @@ export const deleteShippingAddress = async (req, res) => {
       shippingAddress: user.shippingAddress,
     })
   } catch (error) {
-    console.error("Delete shipping address error:", error)
+    logger.error("Delete shipping address error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -529,7 +530,7 @@ export const getUsers = async (req, res) => {
       count,
     })
   } catch (error) {
-    console.error("Get all users error:", error)
+    logger.error("Get all users error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -556,7 +557,7 @@ export const getUserById = async (req, res) => {
       user,
     })
   } catch (error) {
-    console.error("Get user by ID error:", error)
+    logger.error("Get user by ID error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -606,7 +607,7 @@ export const updateUser = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error("Update user error:", error)
+    logger.error("Update user error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -642,7 +643,7 @@ export const deleteUser = async (req, res) => {
       message: "User removed",
     })
   } catch (error) {
-    console.error("Delete user error:", error)
+    logger.error("Delete user error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",

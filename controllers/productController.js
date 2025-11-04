@@ -1,6 +1,7 @@
 import { Product } from "../models/Product.js";
 import { Category } from "../models/Category.js";
 import { validationResult } from "express-validator";
+import logger from "../utils/logger.js";
 
 
 // get products
@@ -40,7 +41,7 @@ export const getProducts = async (req, res) => {
                 count
             })
     } catch (error) {
-        console.error("Error getting Products: ", error)
+        logger.error("Error getting Products:", error)
         return res.status(500).json({
             success: false,
             message: "Server errorr",
@@ -74,7 +75,7 @@ export const getProductById = async (req, res) => {
             product
         });
     } catch (error) {
-        console.error("Get product by it's Id error: ", error)
+        logger.error("Get product by it's Id error:", error)
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -123,7 +124,7 @@ export const createProduct = async (req, res) => {
             product: createdProduct
         });
     } catch (error) {
-        console.error("Create product error: ", error)
+        logger.error("Create product error:", error)
         return res.status(500).json({
             success: false,
             message: "Server Error",
@@ -181,7 +182,7 @@ export const updateProduct = async (req, res) => {
             product: updatedProduct
         })
     } catch (error) {
-        console.error("Update product error :", error);
+        logger.error("Update product error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -212,7 +213,7 @@ export const deleteProduct = async (req, res) => {
             message: "Product removed"
         });
     } catch (error) {
-        console.error("Delete products error:", error);
+        logger.error("Delete products error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -272,7 +273,7 @@ export const createProductReview = async (req, res) => {
             message: "Review added to product"
         });
     } catch (error) {
-        console.error("Create product review error: ", error);
+        logger.error("Create product review error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -292,7 +293,7 @@ export const getTopProduct = async (req, res) => {
             products
         });
     } catch (error) {
-        console.error("Get top product error: ", error);
+        logger.error("Get top product error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",

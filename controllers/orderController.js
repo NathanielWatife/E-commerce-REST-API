@@ -3,6 +3,7 @@ import { Cart } from "../models/Cart.js"
 import { Product } from "../models/Product.js"
 import { User } from "../models/User.js"
 import { validationResult } from "express-validator"
+import logger from "../utils/logger.js"
 import {
   sendEmail,
   generateOrderConfirmationEmail,
@@ -102,7 +103,7 @@ export const createOrder = async (req, res) => {
       order: createdOrder,
     })
   } catch (error) {
-    console.error("Create order error:", error)
+    logger.error("Create order error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -139,7 +140,7 @@ export const getOrderById = async (req, res) => {
       order,
     })
   } catch (error) {
-    console.error("Get order by ID error:", error)
+    logger.error("Get order by ID error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -204,7 +205,7 @@ export const updateOrderToPaid = async (req, res) => {
       order: updatedOrder,
     })
   } catch (error) {
-    console.error("Update order to paid error:", error)
+    logger.error("Update order to paid error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -251,7 +252,7 @@ export const updateOrderToDelivered = async (req, res) => {
       order: updatedOrder,
     })
   } catch (error) {
-    console.error("Update order to delivered error:", error)
+    logger.error("Update order to delivered error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -271,7 +272,7 @@ export const getMyOrders = async (req, res) => {
       orders,
     })
   } catch (error) {
-    console.error("Get my orders error:", error)
+    logger.error("Get my orders error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -302,7 +303,7 @@ export const getOrders = async (req, res) => {
       count,
     })
   } catch (error) {
-    console.error("Get all orders error:", error)
+    logger.error("Get all orders error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -364,7 +365,7 @@ export const updateOrderStatus = async (req, res) => {
       order: updatedOrder,
     })
   } catch (error) {
-    console.error("Update order status error:", error)
+    logger.error("Update order status error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -434,7 +435,7 @@ export const cancelOrder = async (req, res) => {
       order: updatedOrder,
     })
   } catch (error) {
-    console.error("Cancel order error:", error)
+    logger.error("Cancel order error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",

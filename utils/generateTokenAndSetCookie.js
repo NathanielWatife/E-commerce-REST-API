@@ -1,19 +1,19 @@
 import jwt from "jsonwebtoken";
-
+import logger from "./logger.js";
 
 export const generateTokenAndSetCookie = (res, userId) => {
     if (!process.env.JWT_SECRET) {
-        console.error("JWT_SEC environment variable is not set!")
-        throw new Error("JWT secet is not configured")
+        logger.error("JWT_SEC environment variable is not set!")
+        throw new Error("JWT secret is not configured")
     }
 
-    console.log("Generating token for user:", userId)
+    logger.debug(`Generating token for user: ${userId}`)
 
     const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
         expiresIn: "7d"
     });
 
-    console.log("Token generated successfully")
+    logger.debug("Token generated successfully")
 
     res.cookie("token", token, {
         httpOnly: true,

@@ -1,6 +1,7 @@
 import { Cart } from "../models/Cart.js";
 import { Product } from "../models/Product.js";
 import { validationResult } from "express-validator";
+import logger from "../utils/logger.js";
 
 
 // get product in cart
@@ -27,7 +28,7 @@ export const getCart = async(req, res) => {
 			cart,
 		})
 	} catch (error) {
-		console.error("Get cart error: ", error)
+		logger.error("Get cart error:", error)
 		return res.status(500).json({
 			succes: false,
 			message: "Server error",
@@ -109,7 +110,7 @@ export const addToCart = async (req, res) => {
 			cart
 		})
 	} catch (error) {
-		console.error("Add to cart error: ", error);
+		logger.error("Add to cart error:", error);
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
@@ -191,7 +192,7 @@ export const updateCartItem = async (req, res) => {
 			cart
 		});
 	} catch (error) {
-		console.error("Update cart item error: ", error);
+		logger.error("Update cart item error:", error);
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
@@ -240,7 +241,7 @@ export const removeFromCart = async (req, res) => {
 			cart
 		});
 	} catch (error) {
-		console.error("Remove from cart error: ", error)
+		logger.error("Remove from cart error:", error)
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
@@ -275,7 +276,7 @@ export const clearCart = async (req, res) => {
 			cart,
 		});
 	} catch (error) {
-		console.error("Clear cart error:", error);
+		logger.error("Clear cart error:", error);
 		return res.status(500).json({
 			success: false,
 			message: "Server error",

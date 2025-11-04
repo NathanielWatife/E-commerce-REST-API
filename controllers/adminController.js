@@ -1,5 +1,6 @@
 import { User } from "../models/User.js";
 import { validationResult } from "express-validator";
+import logger from "../utils/logger.js";
 
 // get admin dashboarb statistics admin/private
 export const getDashBoardStatistics = async (req, res) => {
@@ -44,7 +45,7 @@ export const getDashBoardStatistics = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Get dashboard statistics error:", error);
+        logger.error("Get dashboard statistics error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -109,7 +110,7 @@ export const getAdminUsers = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Get admin users error:", error);
+        logger.error("Get admin users error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -177,7 +178,7 @@ export const updateAdminUser = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Update admin user error:", error);
+        logger.error("Update admin user error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -256,7 +257,7 @@ export const bulkUserActions = async (req, res) => {
             updatedCount: result.modifiedCount,
         });
     } catch (error) {
-        console.error("Bulk user actions error:", error);
+        logger.error("Bulk user actions error:", error);
         return res.status(500).json({
             sucess: false,
             message: "Server error",
@@ -291,7 +292,7 @@ export const getUserActivityLogs = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Get user activity logs error:", error);
+        logger.error("Get user activity logs error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -331,7 +332,7 @@ export const exportUserData = async (req, res) => {
 
             res.send(csv);
     } catch (error) {
-        console.error("Export user data error:", error);
+        logger.error("Export user data error:", error);
         return res.status(500).json({
             success: false,
             message: "Server error",

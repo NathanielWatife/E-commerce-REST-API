@@ -3,6 +3,7 @@ import { Order } from "../models/Order.js"
 import { User } from "../models/User.js"
 import { validationResult } from "express-validator"
 import { sendEmail, generatePaymentConfirmationEmail } from "../utils/sendEmail.js"
+import logger from "../utils/logger.js"
 
 // @desc    Process payment
 // @route   POST /api/payments
@@ -87,7 +88,7 @@ export const processPayment = async (req, res) => {
       payment: createdPayment,
     })
   } catch (error) {
-    console.error("Process payment error:", error)
+    logger.error("Process payment error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -123,7 +124,7 @@ export const getPaymentById = async (req, res) => {
       payment,
     })
   } catch (error) {
-    console.error("Get payment by ID error:", error)
+    logger.error("Get payment by ID error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -144,7 +145,7 @@ export const getMyPayments = async (req, res) => {
       payments,
     })
   } catch (error) {
-    console.error("Get my payments error:", error)
+    logger.error("Get my payments error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -177,7 +178,7 @@ export const getAllPayments = async (req, res) => {
       count,
     })
   } catch (error) {
-    console.error("Get all payments error:", error)
+    logger.error("Get all payments error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -230,11 +231,11 @@ export const updatePaymentStatus = async (req, res) => {
       payment: updatedPayment,
     })
   } catch (error) {
-    console.error("Update payment status error:", error)
+    logger.error("Update payment status error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: rrocess.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     })
   }
 }

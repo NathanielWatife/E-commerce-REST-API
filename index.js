@@ -11,6 +11,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import cartRoutes from "./routes/cartRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import logger from "./utils/logger.js";
 
 dotenv.config();
 const app = express();
@@ -62,5 +63,5 @@ app.use((req, res, next) => {
 const PORT = process.env.PORT
 app.listen(PORT, () => {
   connectDB();
-  console.log(`Backend Server running on ${PORT}`);
+  logger.info(`Backend Server running on ${PORT}`);
 });

@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken"
 import { User } from "../models/User.js"
+import logger from "../utils/logger.js"
 
 export const protect = async (req, res, next) => {
   let token
@@ -25,15 +26,15 @@ export const protect = async (req, res, next) => {
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    console.log("Token decoded sucessfully")
+  const decoded = jwt.verify(token, process.env.JWT_SECRET)
+  logger.debug("Token decoded successfully")
 
     // Get user from the token
-    const user = await User.findById(decoded.userId).select("-password")
-    console.log("User found:", user ? "Yes" : "No")
+  const user = await User.findById(decoded.userId).select("-password")
+  logger.debug(`User found: ${user ? 'Yes' : 'No'}`)
 
     if (!user) {
-      console.log("User not found in database")
+      logger.warn("User not found in database")
       return res.status(401).json({
         success: false,
         message: "User not found",
@@ -43,7 +44,7 @@ export const protect = async (req, res, next) => {
     req.user = user
     next()
   } catch (error) {
-    console.error("Auth middleware error:", error)
+    logger.error("Auth middleware error:", error)
     return res.status(401).json({
       success: false,
       message: "Not authorized, token failed",
