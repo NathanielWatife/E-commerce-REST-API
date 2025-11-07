@@ -18,6 +18,7 @@ const validateUpdateCartItem = [
 
 // Routes
 router.route("/").get(protect, getCart).post(protect, validateAddToCart, addToCart).delete(protect, clearCart)
+router.route("/sync").post(protect, syncCart)
 
 router.route("/:itemId").put(protect, validateUpdateCartItem, updateCartItem).delete(protect, removeFromCart)
 

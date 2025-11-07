@@ -301,3 +301,13 @@ export const getTopProduct = async (req, res) => {
         });
     }
 };
+
+// search products (frontend may call /products/search?q=...)
+export const searchProducts = async (req, res) => {
+    // normalize query param to keyword used by getProducts
+    if (req.query.q && !req.query.keyword) {
+        req.query.keyword = req.query.q;
+    }
+    // delegate to existing getProducts handler
+    return getProducts(req, res);
+};

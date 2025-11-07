@@ -11,6 +11,8 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import cartRoutes from "./routes/cartRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import notesRoutes from './routes/notesRoutes.js'
+import requestLogger from './middleware/requestLogger.js'
 import logger from "./utils/logger.js";
 
 dotenv.config();
@@ -19,6 +21,8 @@ const app = express();
 // middleware
 app.use(express.json());
 app.use(cookieParser());
+// request logger
+app.use(requestLogger);
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
@@ -36,8 +40,12 @@ app.use("/api/users", userRoutes)
 app.use("/api/products", productRoutes)
 app.use("/api/categories", categoryRoutes)
 app.use("/api/cart", cartRoutes)
+app.use('/api/notes', notesRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/payments", paymentRoutes)
+
+// simple health check
+app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))
 
 
 // error handling middleware

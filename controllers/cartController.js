@@ -284,3 +284,49 @@ export const clearCart = async (req, res) => {
 		});
 	}
 };
+
+// sync cart from client (merge client items into server cart)
+export const syncCart = async (req, res) => {
+	try {
+		const { items } = req.body;
+		if (!Array.isArray(items)) {
+			return res.status(400).json({ success: false, message: 'Items array is required' });
+		}
+
+		// find or create cart
+		let cart = await Cart.findOne({ user: req.user._id });
+		if (!cart) {
+			cart = new Cart({ user: req.user._id, items: [], totalPrice: 0 });
+		}
+
+		// Merge items: for each incoming item (product, quantity) update or push
+		for (const incoming of items) {
+			const productId = incoming.product || incoming.productId || incoming.id;
+			const quantity = Number(incoming.quantity) || 0;
+			if (!productId || quantity <= 0) continue;
+
+			const existingIndex = cart.items.findIndex(i => i.product.toString() === productId.toString());
+			const product = await Product.findById(productId);
+			if (!product) continue; // skip invalid products
+
+			if (existingIndex > -1) {
+				// replace quantity with max of both (or sum, choose merge strategy; here we take max)
+				cart.items[existingIndex].quantity = Math.max(cart.items[existingIndex].quantity, quantity);
+				cart.items[existingIndex].price = product.price;
+			} else {
+				cart.items.push({ product: productId, quantity, price: product.price });
+			}
+		}
+
+		// recalc total
+		cart.totalPrice = cart.items.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
+		await cart.save();
+
+		await cart.populate({ path: 'items.product', select: 'name image price countInStock' });
+
+		return res.status(200).json({ success: true, cart });
+	} catch (error) {
+		logger.error('Sync cart error:', error);
+		return res.status(500).json({ success: false, message: 'Server error', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
+	}
+};
