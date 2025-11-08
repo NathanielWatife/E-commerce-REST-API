@@ -25,7 +25,7 @@ app.use(cookieParser());
 app.use(requestLogger);
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN,
     credentials: true,
     // allow preflight cache for 600 seconds
     optionsSuccessStatus: 200,
