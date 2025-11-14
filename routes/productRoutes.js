@@ -1,5 +1,5 @@
 import express from "express";
-import { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct } from "../controllers/productController.js";
+import { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct, searchProducts } from "../controllers/productController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import { body } from "express-validator";
 

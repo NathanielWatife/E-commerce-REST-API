@@ -31,55 +31,63 @@ const addressSchema = new mongoose.Schema({
 
 const userSchema = new mongoose.Schema(
     {
+        // Display name used across the app
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        // Optional granular names to support future features
         firstName: {
-            type: String, 
-            required: true, 
+            type: String,
         },
         lastName: {
             type: String,
-            required: true,
         },
-        email : {
-            type: String, 
-            required: true, 
+        email: {
+            type: String,
+            required: true,
             unique: true,
             validate: [validator.isEmail, "Provide your email"],
             lowercase: true,
-            trim: true
+            trim: true,
         },
         password: {
-            type: String, 
+            type: String,
             required: true,
             minlength: [8, "Password must be at least 8 characters"],
             select: false,
         },
         phoneNumber: {
             type: String,
-            required: true,
-            trim: true
+            trim: true,
         },
         avatar: {
             type: String,
-            default: "default-avatar.jpg"
+            default: "default-avatar.jpg",
         },
         billingAddress: [addressSchema],
         shippingAddress: [addressSchema],
         role: {
             type: String,
             enum: ["user", "admin", "super-admin"],
-            default: "user"
+            default: "user",
         },
-        lastlogin: { type: Date, default: Date.now },
-        loginHistory: [{
-            ip: String,
-            device: String,
-            time: Date
-        }],
-        isVerified: { type: Boolean, default:false },
-        isActive: {
+        lastLogin: { type: Date, default: Date.now },
+        loginHistory: [
+            {
+                ip: String,
+                device: String,
+                time: Date,
+            },
+        ],
+        isVerified: { type: Boolean, default: false },
+        // Separate active flag and account status for admin controls
+        isActive: { type: Boolean, default: true },
+        accountStatus: {
             type: String,
-            enum: ["active", "suspend", "deactivated"],
-            default: "active"
+            enum: ["active", "suspended", "deactivated"],
+            default: "active",
         },
         resetPasswordToken: String,
         resetPasswordExpiredAt: Date,
@@ -87,21 +95,39 @@ const userSchema = new mongoose.Schema(
         verificationTokenExpiredAt: Date,
         lastpasswordChangedAt: {
             type: Date,
-            default: Date.now
-        }
-    }, {
+            default: Date.now,
+        },
+    },
+    {
         timestamps: true,
         toJSON: { virtuals: true },
         toObject: { virtuals: true },
-    },
+    }
 );
 //  virtuals for full name
-userSchema.virtual('fullName').get(function() {
-    return `${this.firstName} ${this.lastName}`;
+userSchema.virtual("fullName").get(function () {
+    if (this.firstName || this.lastName) {
+        return `${this.firstName || ""} ${this.lastName || ""}`.trim();
+    }
+    return this.name;
+});
+
+// Keep name/firstName/lastName in sync when possible
+userSchema.pre("save", function (next) {
+    if (!this.name && (this.firstName || this.lastName)) {
+        this.name = `${this.firstName || ""} ${this.lastName || ""}`.trim();
+    }
+    if (!this.firstName && this.name) {
+        const parts = this.name.split(" ");
+        this.firstName = parts[0];
+        this.lastName = parts.slice(1).join(" ");
+    }
+    next();
 });
 
 // index for better query performance
 userSchema.index({ isActive: 1 });
+userSchema.index({ accountStatus: 1 });
 userSchema.index({ createdAt: 1 });
 
 export const User = mongoose.model("User", userSchema);

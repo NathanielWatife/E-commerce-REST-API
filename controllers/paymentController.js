@@ -112,7 +112,10 @@ export const getPaymentById = async (req, res) => {
     }
 
     // Check if payment belongs to user or user is admin
-    if (payment.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (
+      payment.user.toString() !== req.user._id.toString() &&
+      !["admin", "super-admin"].includes(req.user.role)
+    ) {
       return res.status(403).json({
         success: false,
         message: "Not authorized",

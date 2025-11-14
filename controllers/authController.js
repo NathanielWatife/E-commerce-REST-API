@@ -150,8 +150,8 @@ export const login = async (req, res) => {
 			user.loginHistory = user.loginHistory.slice(-50);
 		}
 
-		// update lastlogin
-		user.lastlogin = Date.now()
+		// update lastLogin (schema rename from lastlogin)
+		user.lastLogin = Date.now()
 		await user.save()
 
 		// generate token
@@ -373,3 +373,29 @@ export const forgotPassword = async (req, res) => {
 	  })
 	}
   }
+
+
+// get current authenticated user
+export const getCurrentUser = async (req, res) => {
+	try {
+		const user = await User.findById(req.user?._id).select("-password")
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			})
+		}
+
+		return res.status(200).json({
+			success: true,
+			user,
+		})
+	} catch (error) {
+		logger.error("Get current user error:", error)
+		return res.status(500).json({
+			success: false,
+			message: "Server error",
+			error: process.env.NODE_ENV === "development" ? error.message : undefined,
+		})
+	}
+}

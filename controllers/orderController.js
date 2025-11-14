@@ -128,7 +128,10 @@ export const getOrderById = async (req, res) => {
     }
 
     // Check if the order belongs to the user or if the user is an admin
-    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (
+      order.user._id.toString() !== req.user._id.toString() &&
+      !["admin", "super-admin"].includes(req.user.role)
+    ) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to access this order",
@@ -162,7 +165,10 @@ export const updateOrderToPaid = async (req, res) => {
     }
 
     // Check if the order belongs to the user or if the user is an admin
-    if (order.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (
+      order.user.toString() !== req.user._id.toString() &&
+      !["admin", "super-admin"].includes(req.user.role)
+    ) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to update this order",
@@ -387,7 +393,10 @@ export const cancelOrder = async (req, res) => {
     }
 
     // Check if the order belongs to the user or if the user is an admin
-    if (order.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (
+      order.user.toString() !== req.user._id.toString() &&
+      !["admin", "super-admin"].includes(req.user.role)
+    ) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to cancel this order",

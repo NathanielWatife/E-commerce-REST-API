@@ -1,4 +1,6 @@
 import { User } from "../models/User.js";
+import { Order } from "../models/Order.js";
+import { Product } from "../models/Product.js";
 import { validationResult } from "express-validator";
 import logger from "../utils/logger.js";
 
@@ -6,12 +8,26 @@ import logger from "../utils/logger.js";
 export const getDashBoardStatistics = async (req, res) => {
     try {
     // get total users
-    const totalUsers = await User.countDocuments();
+        const totalUsers = await User.countDocuments();
         const totalAdmins = await User.countDocuments({ role: {
             $in: ["admin", "super-admin"]
         } });
         const verifiedUsers = await User.countDocuments({ isVerified: true });
-        const activeUsers = await User.countDocuments({ isActive: true });
+    const activeUsers = await User.countDocuments({ isActive: true });
+
+        // Additional commerce stats
+        const totalProducts = await Product.countDocuments();
+        const totalOrders = await Order.countDocuments();
+        const recentOrders = await Order.find({})
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .select("_id totalPrice status createdAt user")
+            .populate("user", "name email role");
+        const revenueAgg = await Order.aggregate([
+            { $match: { isPaid: true } },
+            { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+        ]);
+        const totalRevenue = revenueAgg.length ? revenueAgg[0].total : 0;
 
         const newUsersThisMonth = await User.countDocuments({
             createdAt: {
@@ -36,12 +52,22 @@ export const getDashBoardStatistics = async (req, res) => {
         return res.status(200).json({
             success: true,
             stats: {
-                totalUsers,
-                totalAdmins,
-                verifiedUsers,
-                activeUsers,
-                newUsersThisMonth,
-                userGrowth
+                users: {
+                    totalUsers,
+                    totalAdmins,
+                    verifiedUsers,
+                    activeUsers,
+                    newUsersThisMonth,
+                    userGrowth
+                },
+                products: {
+                    totalProducts
+                },
+                orders: {
+                    totalOrders,
+                    totalRevenue,
+                    recentOrders
+                }
             }
         });
     } catch (error) {
@@ -79,8 +105,8 @@ export const getAdminUsers = async (req, res) => {
             ];
         }
         if (role) filter.role = role;
-        if (status) filter.accountStatus = status;
-        if (verified !== undefined) filter.isVerified = verified === "true";
+    if (status) filter.accountStatus = status;
+    if (verified !== undefined) filter.isVerified = verified === "true";
 
 
         const count = await User.countDocuments(filter);
@@ -147,7 +173,7 @@ export const updateAdminUser = async (req, res) => {
             });
         }
 
-        const { role, accountStatus, isActive, isVerified } = req.body;
+    const { role, accountStatus, isActive, isVerified } = req.body;
 
         // update user fields
         if (role && ["user", "admin", "super-admin"].includes(role)) {
@@ -155,8 +181,16 @@ export const updateAdminUser = async (req, res) => {
         }
         if (accountStatus && ["active", "suspended", "deactivated"].includes(accountStatus)) {
             user.accountStatus = accountStatus;
+            // keep isActive boolean in sync
+            user.isActive = accountStatus === "active";
         }
-        if (isActive !== undefined) user.isActive = isActive;
+        if (isActive !== undefined) {
+            user.isActive = Boolean(isActive);
+            // auto derive accountStatus if not explicitly provided
+            if (!accountStatus) {
+                user.accountStatus = user.isActive ? "active" : user.accountStatus === "suspended" ? "suspended" : "deactivated";
+            }
+        }
         if (isVerified !== undefined) user.isVerified = isVerified;
 
         const updatedUser = await user.save();

@@ -61,3 +61,29 @@ Next steps you can do (optional)
 - Add log rotation (winston-daily-rotate-file) for production.
 - Secure production cookies further (set proper domain, secure=true and sameSite as needed).
 
+
+
+## Admin UI (static) and API endpoints
+
+This repository now includes a minimal static Admin UI inside `raddazle-frontend` to manage users and view dashboard stats.
+
+Pages
+
+- `raddazle-frontend/admin-login.html` — Log in and obtain the auth cookie
+- `raddazle-frontend/admin-dashboard.html` — View user/product/order stats and recent orders
+- `raddazle-frontend/admin-users.html` — Search/filter users, update roles/status, perform bulk actions, export CSV
+
+Notes
+
+- The Admin UI expects the API to be reachable under the same origin at `/api` and will send cookies with `credentials: include`.
+- Ensure the backend `CORS_ORIGIN` includes the frontend origin if serving from a different host/port.
+- Admin-only routes are protected by `protect` + `admin` middleware and accept either cookie-based JWT (preferred) or `Authorization: Bearer <token>`.
+
+Key admin endpoints
+
+- `GET /api/admin/dashboard` — Aggregated stats (users/products/orders/revenue)
+- `GET /api/admin/users` — List users with filters/pagination
+- `PUT /api/admin/users/:id` — Update role/status/flags
+- `POST /api/admin/users/bulk` — Bulk activate/suspend/deactivate/delete
+- `GET /api/admin/users/export` — CSV export of users
+
