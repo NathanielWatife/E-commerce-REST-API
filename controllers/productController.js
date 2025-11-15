@@ -3,6 +3,8 @@ import { InventoryHistory } from "../models/InventoryHistory.js";
 import { Category } from "../models/Category.js";
 import { validationResult } from "express-validator";
 import logger from "../utils/logger.js";
+import fs from 'fs';
+import path from 'path';
 
 
 // get products
@@ -167,10 +169,19 @@ export const updateProduct = async (req, res) => {
             }
         }
 
+        const oldImage = product.image
+
         product.name = name || product.name
         product.price = price || product.price
         product.description = description || product.description
-        product.image = image || product.image
+        // Determine image update behavior:
+        const providedImage = typeof image !== 'undefined'
+        const removingImage = providedImage && image === ''
+        if (removingImage) {
+            product.image = ''
+        } else if (providedImage) {
+            product.image = image || product.image
+        }
         product.brand = brand || product.brand
         product.category = category || product.category
         const originalStock = product.countInStock
@@ -178,6 +189,26 @@ export const updateProduct = async (req, res) => {
         product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured
 
     const updatedProduct = await product.save()
+
+        // If image changed and old image was a local upload, delete the old file
+        try {
+            const imgChanged = (typeof image !== 'undefined') && oldImage && image !== oldImage;
+            const removeOld = (removingImage || imgChanged) && !!oldImage
+            if (removeOld) {
+                const marker = '/uploads/';
+                const idx = oldImage.indexOf(marker);
+                if (idx !== -1) {
+                    const rel = oldImage.slice(idx + marker.length);
+                    const filePath = path.join(process.cwd(), 'uploads', rel);
+                    if (fs.existsSync(filePath)) {
+                        await fs.promises.unlink(filePath);
+                        logger.info(`Deleted old product image on update: ${filePath}`);
+                    }
+                }
+            }
+        } catch (e) {
+            logger.warn(`Failed to delete old image on update: ${e.message}`)
+        }
 
         if (countInStock !== undefined && countInStock !== originalStock) {
             await InventoryHistory.create({
@@ -218,6 +249,23 @@ export const deleteProduct = async (req, res) => {
                 success: false,
                 message: "Product not found"
             });
+        }
+
+        // Attempt to delete local uploaded image if it resides under /uploads
+        try {
+            const img = product.image || '';
+            const marker = '/uploads/';
+            const idx = img.indexOf(marker);
+            if (idx !== -1) {
+                const rel = img.slice(idx + marker.length); // filename or nested path
+                const filePath = path.join(process.cwd(), 'uploads', rel);
+                if (fs.existsSync(filePath)) {
+                    await fs.promises.unlink(filePath);
+                    logger.info(`Deleted product image file: ${filePath}`);
+                }
+            }
+        } catch (e) {
+            logger.warn(`Failed to delete product image file: ${e.message}`);
         }
 
         await product.deleteOne()
