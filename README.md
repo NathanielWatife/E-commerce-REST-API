@@ -123,3 +123,28 @@ Key admin endpoints
 - Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) for the assistant. Without it the API will throw an error at startup.
 - The React app now ships with a floating “Need help?” chat widget (see `raddazle-react/src/components/ChatWidget.js`). Users must be logged in to chat so the backend can tie complaints to their profile.
 
+
+## Super-Admin initialization
+
+To create the first super-admin account, use the provided initializer script that reads credentials from environment variables.
+
+1. Set environment variables (e.g., in `.env`):
+
+```
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_PASSWORD=ChangeMe123!
+SUPER_ADMIN_NAME=Site Owner
+# Optional: if user already exists, reset their password
+SUPER_ADMIN_RESET=true
+```
+
+2. Run the script:
+
+```
+npm run init:super-admin
+```
+
+The script will create (or update) a user to role `super-admin`, ensure the account is verified/active, and optionally reset the password if `SUPER_ADMIN_RESET=true`.
+
+Security tip: unset `SUPER_ADMIN_RESET` after running in production.
+
