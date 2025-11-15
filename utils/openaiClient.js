@@ -1,8 +1,10 @@
 import OpenAI from "openai";
 import logger from "./logger.js";
 
+export const isChatConfigured = () => !!process.env.OPENAI_API_KEY;
+
 const ensureApiKey = () => {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isChatConfigured()) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 };
@@ -21,6 +23,12 @@ const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const SYSTEM_PROMPT = `You are Raddazle's helpful customer care assistant. You help customers with order complaints, shipping issues, and product questions. Always respond in a friendly, empathetic tone, collect relevant details, and suggest next steps. Keep replies concise (under 120 words) and offer to escalate to human support when necessary.`;
 
 export const generateComplaintReply = async (conversation) => {
+  // Guard for missing API key
+  if (!isChatConfigured()) {
+    const err = new Error("Chat is not configured");
+    err.code = "CHAT_DISABLED";
+    throw err;
+  }
   const client = getOpenAIClient();
   const limitedHistory = conversation.slice(-12);
   try {

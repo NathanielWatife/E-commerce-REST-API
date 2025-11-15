@@ -1,6 +1,6 @@
 import { ChatSession } from "../models/ChatSession.js";
 import logger from "../utils/logger.js";
-import { generateComplaintReply } from "../utils/openaiClient.js";
+import { generateComplaintReply, isChatConfigured } from "../utils/openaiClient.js";
 
 const MAX_STORED_MESSAGES = 40;
 
@@ -27,6 +27,9 @@ const appendAssistantResponse = (session, reply) => {
 export const createChatSession = async (req, res) => {
   const { topic, message } = req.body;
   try {
+    if (!isChatConfigured()) {
+      return res.status(503).json({ success: false, message: "Chat assistant is temporarily unavailable. Please try again later." });
+    }
     const session = new ChatSession({
       user: req.user._id,
       topic: ensureContent(topic),
@@ -43,7 +46,11 @@ export const createChatSession = async (req, res) => {
     await session.save();
     res.status(201).json({ success: true, session });
   } catch (error) {
+    const isDisabled = error?.code === 'CHAT_DISABLED' || /OPENAI_API_KEY/i.test(error?.message || '');
     logger.error("Failed to create chat session", { error: error.message });
+    if (isDisabled) {
+      return res.status(503).json({ success: false, message: "Chat assistant is temporarily unavailable. Please try again later." });
+    }
     res.status(500).json({ success: false, message: "Unable to create chat session" });
   }
 };
@@ -81,6 +88,9 @@ export const sendChatMessage = async (req, res) => {
   }
 
   try {
+    if (!isChatConfigured()) {
+      return res.status(503).json({ success: false, message: "Chat assistant is temporarily unavailable. Please try again later." });
+    }
     const session = await ensureSessionOwnership(req.params.id, req.user._id);
     if (!session) {
       return res.status(404).json({ success: false, message: "Chat session not found" });
@@ -95,7 +105,11 @@ export const sendChatMessage = async (req, res) => {
 
     res.json({ success: true, session });
   } catch (error) {
+    const isDisabled = error?.code === 'CHAT_DISABLED' || /OPENAI_API_KEY/i.test(error?.message || '');
     logger.error("Failed to send chat message", { error: error.message });
+    if (isDisabled) {
+      return res.status(503).json({ success: false, message: "Chat assistant is temporarily unavailable. Please try again later." });
+    }
     res.status(500).json({ success: false, message: "Unable to process your message" });
   }
 };
