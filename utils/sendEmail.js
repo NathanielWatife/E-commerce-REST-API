@@ -1,29 +1,46 @@
 import nodemailer from "nodemailer"
 import logger from "./logger.js"
 
-// Send an email using nodemailer
-export const sendEmail = async (options) => {
+let transporterSingleton = null
+
+const getTransporter = () => {
+  if (transporterSingleton) return transporterSingleton
   try {
-    // Create a transporter
-    const transporter = nodemailer.createTransport({
+    transporterSingleton = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
+      port: Number(process.env.EMAIL_PORT),
       secure: process.env.EMAIL_SECURE === "true",
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
     })
+  } catch (e) {
+    logger.error("Failed to initialize mail transporter", e)
+  }
+  return transporterSingleton
+}
 
-    // Define email options
+// Send an email using nodemailer
+export const sendEmail = async (options) => {
+  try {
+    const transporter = getTransporter()
+    if (!transporter) {
+      logger.error("Email transporter not available")
+      return false
+    }
     const mailOptions = {
       from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM}>`,
       to: options.email,
       subject: options.subject,
       html: options.message,
     }
-
-    // Send the email
     await transporter.sendMail(mailOptions)
     return true
   } catch (error) {
@@ -33,7 +50,9 @@ export const sendEmail = async (options) => {
 }
 
 // Generate verification email content
-export const generateVerificationEmail = (name, token) => {
+export const generateVerificationEmail = (name, token, email) => {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
+  const verifyLink = `${clientUrl}/verify-email?email=${encodeURIComponent(email)}`
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #333; text-align: center;">Verify Your Email Address</h2>
@@ -42,6 +61,10 @@ export const generateVerificationEmail = (name, token) => {
       <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; letter-spacing: 5px;">
         ${token}
       </div>
+      <p>Or click the button below to go to the verification page:</p>
+      <p style="text-align: center;">
+        <a href="${verifyLink}" style="display: inline-block; padding: 12px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 4px;">Verify Email</a>
+      </p>
       <p>This code will expire in 24 hours.</p>
       <p>If you did not request this verification, please ignore this email.</p>
       <p>Best regards,<br>The Team</p>
@@ -50,7 +73,9 @@ export const generateVerificationEmail = (name, token) => {
 }
 
 //Generate password reset email content
-export const generatePasswordResetEmail = (name, token) => {
+export const generatePasswordResetEmail = (name, token, email) => {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
+  const resetLink = `${clientUrl}/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(token)}`
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
@@ -59,6 +84,10 @@ export const generatePasswordResetEmail = (name, token) => {
       <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; letter-spacing: 5px;">
         ${token}
       </div>
+      <p>Or click the button below to go directly to the reset page:</p>
+      <p style="text-align: center;">
+        <a href="${resetLink}" style="display: inline-block; padding: 12px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 4px;">Reset Password</a>
+      </p>
       <p>This code will expire in 1 hour.</p>
       <p>If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
       <p>Best regards,<br>The Team</p>
@@ -273,9 +302,10 @@ export const generateOrderStatusUpdateEmail = (name, order, previousStatus) => {
           ? `
         <div style="background-color: #e3f2fd; padding: 15px; margin: 15px 0; border-left: 4px solid #2196f3;">
           <p><strong>Tracking Information:</strong></p>
-          <p>Carrier: ${order.paymentResult?.carrier || "Standard Shipping"}</p>
-          <p>Tracking Number: ${order.paymentResult?.tracking_number || "Will be updated soon"}</p>
-          <p>Estimated Delivery: ${order.paymentResult?.estimated_delivery || "Within 5-7 business days"}</p>
+          <p>Carrier: ${order.shippingCarrier || "Standard Shipping"}</p>
+          <p>Tracking Number: ${order.trackingNumber || "Will be updated soon"}</p>
+          ${order.trackingUrl ? `<p>Tracking URL: <a href="${order.trackingUrl}">${order.trackingUrl}</a></p>` : ""}
+          <p>Estimated Delivery: ${order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleString() : "Within 5-7 business days"}</p>
         </div>
       `
           : ""

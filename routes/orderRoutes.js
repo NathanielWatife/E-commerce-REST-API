@@ -8,6 +8,7 @@ import {
   getOrders,
   updateOrderStatus,
   cancelOrder,
+  shipOrder,
 } from "../controllers/orderController.js"
 import { protect, admin } from "../middleware/authMiddleware.js"
 import { body } from "express-validator"
@@ -32,6 +33,15 @@ const validateOrderStatus = [
     .withMessage("Status is required")
     .isIn(["pending", "processing", "shipped", "delivered", "cancelled"])
     .withMessage("Invalid status"),
+  body("note").optional().isString().isLength({ max: 500 }).withMessage("Note too long"),
+]
+
+const validateShipOrder = [
+  body("shippingCarrier").optional().isString(),
+  body("trackingNumber").notEmpty().withMessage("Tracking number is required"),
+  body("trackingUrl").optional().isString(),
+  body("estimatedDelivery").optional().isISO8601(),
+  body("note").optional().isString().isLength({ max: 500 }),
 ]
 
 // Routes
@@ -41,5 +51,6 @@ router.route("/:id").get(protect, getOrderById)
 router.route("/:id/pay").put(protect, updateOrderToPaid)
 router.route("/:id/deliver").put(protect, admin, updateOrderToDelivered)
 router.route("/:id/status").put(protect, admin, validateOrderStatus, updateOrderStatus)
+router.route("/:id/ship").put(protect, admin, validateShipOrder, shipOrder)
 router.route("/:id/cancel").put(protect, cancelOrder)
 export default router

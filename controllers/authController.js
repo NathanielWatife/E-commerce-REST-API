@@ -59,13 +59,20 @@ export const signup = async (req, res) => {
 		});
 		await user.save()
 
-		// send verification email
-		const emailContent = generateVerificationEmail(name, verificationToken)
-		await sendEmail({
-			email,
-			subject: "Verify your email address",
-			message: emailContent,
-		});
+		// send verification email in background (don't block response)
+		const emailContent = generateVerificationEmail(name, verificationToken, email)
+		setImmediate(async () => {
+			try {
+				const ok = await sendEmail({
+					email,
+					subject: "Verify your email address",
+					message: emailContent,
+				})
+				if (!ok) logger.warn("Verification email failed to send")
+			} catch (e) {
+				logger.error("Background verification email error:", e)
+			}
+		})
 
 		// jwt
 		generateTokenAndSetCookie(res, user._id)
@@ -78,6 +85,8 @@ export const signup = async (req, res) => {
 				email: user.email,
 				isVerified: user.isVerified
 			},
+			// expose code in dev to speed up testing
+			debug: process.env.NODE_ENV !== "production" ? { verificationToken } : undefined,
 		})
 	} catch (error) {
 		logger.error("Signup error:", error)
@@ -248,23 +257,31 @@ export const verifyEmail = async (req, res) => {
 		})
 	  }
   
-	  // Generate new verification token
+		// Generate new verification token
 	  const verificationToken = generateRandomToken()
 	  user.verificationToken = verificationToken
 	  user.verificationTokenExpiredAt = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
 	  await user.save()
   
-	  // Send verification email
-	  const emailContent = generateVerificationEmail(user.name, verificationToken)
-	  await sendEmail({
-		email,
-		subject: "Verify Your Email Address",
-		message: emailContent,
-	  })
-  
-	  return res.status(200).json({
+		// Send verification email (background)
+		const emailContent = generateVerificationEmail(user.name, verificationToken, email)
+		setImmediate(async () => {
+			try {
+				const ok = await sendEmail({
+					email,
+					subject: "Verify Your Email Address",
+					message: emailContent,
+				})
+				if (!ok) logger.warn("Resend verification email failed")
+			} catch (e) {
+				logger.error("Background resend verification email error:", e)
+			}
+		})
+
+		return res.status(200).json({
 		success: true,
-		message: "Verification email sent successfully",
+			message: "Verification email sent successfully",
+			debug: process.env.NODE_ENV !== "production" ? { verificationToken } : undefined,
 	  })
 		} catch (error) {
 			logger.error("Resend verification email error:", error)
@@ -313,17 +330,25 @@ export const forgotPassword = async (req, res) => {
 	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000 // 1 hour
 	  await user.save()
   
-	  // Send password reset email
-	  const emailContent = generatePasswordResetEmail(user.name, resetToken)
-	  await sendEmail({
-		email,
-		subject: "Password Reset Request",
-		message: emailContent,
-	  })
-  
-	  return res.status(200).json({
+		// Send password reset email (background)
+		const emailContent = generatePasswordResetEmail(user.name, resetToken, email)
+		setImmediate(async () => {
+			try {
+				const ok = await sendEmail({
+					email,
+					subject: "Password Reset Request",
+					message: emailContent,
+				})
+				if (!ok) logger.warn("Password reset email failed to send")
+			} catch (e) {
+				logger.error("Background password reset email error:", e)
+			}
+		})
+
+		return res.status(200).json({
 		success: true,
-		message: "Password reset email sent successfully",
+			message: "Password reset email sent successfully",
+			debug: process.env.NODE_ENV !== "production" ? { resetToken } : undefined,
 	  })
 		} catch (error) {
 			logger.error("Forgot password error:", error)

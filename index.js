@@ -12,6 +12,7 @@ import cartRoutes from "./routes/cartRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import notesRoutes from './routes/notesRoutes.js'
+import chatbotRoutes from './routes/chatbotRoutes.js'
 import requestLogger from './middleware/requestLogger.js'
 import logger from "./utils/logger.js";
 
@@ -43,6 +44,7 @@ app.use("/api/cart", cartRoutes)
 app.use('/api/notes', notesRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/payments", paymentRoutes)
+app.use('/api/chatbot', chatbotRoutes)
 
 // simple health check
 app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))

@@ -1,4 +1,5 @@
 import { Product } from "../models/Product.js";
+import { InventoryHistory } from "../models/InventoryHistory.js";
 import { Category } from "../models/Category.js";
 import { validationResult } from "express-validator";
 import logger from "../utils/logger.js";
@@ -172,10 +173,23 @@ export const updateProduct = async (req, res) => {
         product.image = image || product.image
         product.brand = brand || product.brand
         product.category = category || product.category
+        const originalStock = product.countInStock
         product.countInStock = countInStock !== undefined ? countInStock : product.countInStock
         product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured
 
     const updatedProduct = await product.save()
+
+        if (countInStock !== undefined && countInStock !== originalStock) {
+            await InventoryHistory.create({
+                product: updatedProduct._id,
+                user: req.user._id,
+                change: countInStock - originalStock,
+                reason: "manual-adjustment",
+                previousStock: originalStock,
+                newStock: updatedProduct.countInStock,
+                note: `Manual update via product edit`
+            })
+        }
 
         return res.status(200).json({
             success: true,
@@ -311,3 +325,55 @@ export const searchProducts = async (req, res) => {
     // delegate to existing getProducts handler
     return getProducts(req, res);
 };
+
+// Adjust inventory for a product (admin)
+export const adjustInventory = async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() })
+    }
+    try {
+        const { delta, reason, note } = req.body
+        const product = await Product.findById(req.params.id)
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Product not found" })
+        }
+        const prev = product.countInStock
+        product.countInStock = Math.max(0, prev + Number(delta))
+        const saved = await product.save()
+        await InventoryHistory.create({
+            product: saved._id,
+            user: req.user._id,
+            change: Number(delta),
+            reason: reason || "manual-adjustment",
+            previousStock: prev,
+            newStock: saved.countInStock,
+            note,
+        })
+        return res.status(200).json({ success: true, product: saved })
+    } catch (error) {
+        logger.error("Adjust inventory error:", error)
+        return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV === "development" ? error.message : undefined })
+    }
+}
+
+// Get inventory history for a product
+export const getInventoryHistory = async (req, res) => {
+    try {
+        const pageSize = Number(req.query.pageSize) || 20
+        const page = Number(req.query.page) || 1
+        const [items, count] = await Promise.all([
+            InventoryHistory.find({ product: req.params.id })
+                .populate("user", "name email")
+                .populate("order", "_id status createdAt")
+                .sort({ createdAt: -1 })
+                .limit(pageSize)
+                .skip(pageSize * (page - 1)),
+            InventoryHistory.countDocuments({ product: req.params.id }),
+        ])
+        return res.status(200).json({ success: true, history: items, page, pages: Math.ceil(count / pageSize), count })
+    } catch (error) {
+        logger.error("Get inventory history error:", error)
+        return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV === "development" ? error.message : undefined })
+    }
+}

@@ -2,6 +2,7 @@ import { Order } from "../models/Order.js"
 import { Cart } from "../models/Cart.js"
 import { Product } from "../models/Product.js"
 import { User } from "../models/User.js"
+import { InventoryHistory } from "../models/InventoryHistory.js"
 import { validationResult } from "express-validator"
 import logger from "../utils/logger.js"
 import {
@@ -75,11 +76,22 @@ export const createOrder = async (req, res) => {
 
     const createdOrder = await order.save()
 
-    // Update product stock
+    // Update product stock and record inventory history
     for (const item of cart.items) {
       const product = await Product.findById(item.product._id)
+      const prev = product.countInStock
       product.countInStock -= item.quantity
       await product.save()
+      await InventoryHistory.create({
+        product: product._id,
+        user: req.user._id,
+        order: createdOrder._id,
+        change: -Math.abs(item.quantity),
+        reason: "order-placement",
+        previousStock: prev,
+        newStock: product.countInStock,
+        note: `Order ${createdOrder._id}: -${item.quantity} for ${product.name}`,
+      })
     }
 
     // Clear cart after order is created
@@ -175,14 +187,20 @@ export const updateOrderToPaid = async (req, res) => {
       })
     }
 
+    // derive payment payload (allow mock data when gateway response is absent)
+    const paymentId = req.body.id || `mock_txn_${Date.now()}`
+    const paymentStatus = req.body.status || "COMPLETED"
+    const paymentUpdateTime = req.body.update_time || new Date().toISOString()
+    const paymentEmail = req.body.email_address || req.user.email
+
     // Update order
     order.isPaid = true
     order.paidAt = Date.now()
     order.paymentResult = {
-      id: req.body.id,
-      status: req.body.status,
-      update_time: req.body.update_time,
-      email_address: req.body.email_address,
+      id: paymentId,
+      status: paymentStatus,
+      update_time: paymentUpdateTime,
+      email_address: paymentEmail,
     }
 
     const updatedOrder = await order.save()
@@ -192,11 +210,11 @@ export const updateOrderToPaid = async (req, res) => {
 
     // Send payment confirmation email
     const paymentInfo = {
-      _id: req.body.id,
+      _id: paymentId,
       paymentMethod: order.paymentMethod,
       amount: order.totalPrice,
       currency: "USD",
-      createdAt: new Date(),
+      createdAt: new Date(paymentUpdateTime),
     }
 
     const paymentEmailContent = generatePaymentConfirmationEmail(user.name, paymentInfo, updatedOrder)
@@ -239,6 +257,7 @@ export const updateOrderToDelivered = async (req, res) => {
     order.isDelivered = true
     order.deliveredAt = Date.now()
     order.status = "delivered"
+    order.statusHistory.push({ status: "delivered", updatedBy: req.user._id })
 
     const updatedOrder = await order.save()
 
@@ -330,7 +349,7 @@ export const updateOrderStatus = async (req, res) => {
   }
 
   try {
-    const { status } = req.body
+    const { status, note } = req.body
 
     const order = await Order.findById(req.params.id)
 
@@ -346,6 +365,7 @@ export const updateOrderStatus = async (req, res) => {
 
     // Update order status
     order.status = status
+    order.statusHistory.push({ status, note, updatedBy: req.user._id })
 
     // If status is delivered, update delivered status
     if (status === "delivered") {
@@ -416,13 +436,25 @@ export const cancelOrder = async (req, res) => {
 
     // Update order status
     order.status = "cancelled"
+    order.statusHistory.push({ status: "cancelled", updatedBy: req.user._id })
 
     // Restore product stock
     for (const item of order.orderItems) {
       const product = await Product.findById(item.product)
       if (product) {
+        const prev = product.countInStock
         product.countInStock += item.quantity
         await product.save()
+        await InventoryHistory.create({
+          product: product._id,
+          user: req.user._id,
+          order: order._id,
+          change: Math.abs(item.quantity),
+          reason: "order-cancellation",
+          previousStock: prev,
+          newStock: product.countInStock,
+          note: `Order ${order._id} cancelled: +${item.quantity} for ${product.name}`,
+        })
       }
     }
 
@@ -455,3 +487,40 @@ export const cancelOrder = async (req, res) => {
 
 
 // tracking of order
+
+// @desc    Mark order as shipped and add tracking info
+export const shipOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" })
+    }
+
+    const previousStatus = order.status
+    const { shippingCarrier, trackingNumber, trackingUrl, estimatedDelivery, note } = req.body
+
+    order.status = "shipped"
+    order.shippedAt = new Date()
+    order.shippingCarrier = shippingCarrier || order.shippingCarrier
+    order.trackingNumber = trackingNumber || order.trackingNumber
+    order.trackingUrl = trackingUrl || order.trackingUrl
+    order.estimatedDelivery = estimatedDelivery ? new Date(estimatedDelivery) : order.estimatedDelivery
+    order.statusHistory.push({ status: "shipped", note, updatedBy: req.user._id })
+
+    const updatedOrder = await order.save()
+
+    const user = await User.findById(order.user)
+    const statusUpdateEmailContent = generateOrderStatusUpdateEmail(user.name, updatedOrder, previousStatus)
+    await sendEmail({
+      email: user.email,
+      subject: `Your Order #${order._id} Has Shipped`,
+      message: statusUpdateEmailContent,
+    })
+
+    return res.status(200).json({ success: true, order: updatedOrder })
+  } catch (error) {
+    logger.error("Ship order error:", error)
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV === "development" ? error.message : undefined })
+  }
+}

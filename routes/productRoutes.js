@@ -1,5 +1,5 @@
 import express from "express";
-import { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct, searchProducts } from "../controllers/productController.js";
+import { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct, searchProducts, adjustInventory, getInventoryHistory } from "../controllers/productController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import { body } from "express-validator";
 
@@ -23,6 +23,11 @@ const validationProductReview = [
 	body("comment").notEmpty().withMessage("Comment is required")
 ]
 
+const validateAdjustInventory = [
+	body("delta").notEmpty().isInt().withMessage("delta must be an integer"),
+	body("reason").optional().isIn(["order-placement","order-cancellation","manual-adjustment","return","correction","initial-stock"]).withMessage("Invalid reason"),
+	body("note").optional().isString().isLength({ max: 500 })
+]
 
 
 // routes
@@ -30,7 +35,9 @@ router.route("/").get(getProducts).post(protect, admin, validationProductCreate,
 router.route("/top").get(getTopProduct);
 router.route("/search").get(searchProducts);
 router.route("/:id").get(getProductById).put(protect, admin, updateProduct).delete(protect, admin, deleteProduct);
-router.route("/:id/reviews").post(protect, admin, validationProductReview, createProductReview);
+router.route("/:id/reviews").post(protect, validationProductReview, createProductReview);
+router.route("/:id/inventory/adjust").post(protect, admin, validateAdjustInventory, adjustInventory);
+router.route("/:id/inventory/history").get(protect, admin, getInventoryHistory);
 // implement search routes later
 
 

@@ -20,6 +20,9 @@ E-commerce REST API built with Node.js, Express and MongoDB.
          EMAIL_FROM=...
          EMAIL_FROM_NAME=...
          CORS_ORIGIN=http://localhost:3000
+         CLIENT_URL=http://localhost:3000 # used in email links for verify/reset
+         OPENAI_API_KEY=sk-...
+         OPENAI_MODEL=gpt-4o-mini # optional override
 
      - Start backend (dev):
 
@@ -48,10 +51,33 @@ Notes about authentication and cookies
 - For token-in-header flows the frontend still reads a local token from localStorage and sets the `Authorization` header. Both approaches are supported.
 - Ensure `CORS_ORIGIN` on the backend includes your frontend host when running in production.
 
+## Email Verification & Password Reset
+
+User signup requires email verification. On signup, a 6‑digit code is emailed to the user. They can verify via:
+
+- The code input on the frontend Register page (second step), or
+- A direct link in the email that opens the Verify page: `${CLIENT_URL}/verify-email?email=...`
+
+Endpoints
+
+- `POST /api/auth/signup` — create user and send 6‑digit verification code
+- `POST /api/auth/verify-email` — body: `{ email, token }` to verify account
+- `POST /api/auth/reset-verification` — body: `{ email }` to resend verification code
+- `POST /api/auth/forgot-password` — body: `{ email }` to send password reset code
+- `POST /api/auth/reset-password` — body: `{ email, token, newPassword }` to reset password
+
+Emails include both the 6‑digit code and a convenience link to the corresponding frontend pages using `CLIENT_URL`:
+
+- Verify: `${CLIENT_URL}/verify-email?email=...`
+- Reset: `${CLIENT_URL}/reset-password?email=...&code=...`
+
+Make sure `CLIENT_URL` points at your deployed frontend in production (e.g., `https://app.example.com`).
+
 Useful files
 
 - `index.js` — backend entry (CORS config and routes)
 - `utils/logger.js` — centralized logging (winston)
+- `utils/openaiClient.js` — OpenAI helper used by the complaint chatbot
 - `raddazle/vite.config.js` — frontend dev proxy for `/api` -> backend
 - `raddazle/src/services/api.js` — axios instance (now uses withCredentials)
 
@@ -86,4 +112,14 @@ Key admin endpoints
 - `PUT /api/admin/users/:id` — Update role/status/flags
 - `POST /api/admin/users/bulk` — Bulk activate/suspend/deactivate/delete
 - `GET /api/admin/users/export` — CSV export of users
+
+## Customer-support chatbot
+
+- New authenticated routes under `/api/chatbot` let customers raise complaints and receive AI-powered replies:
+    - `POST /api/chatbot/sessions` — start a session (optionally with the first message)
+    - `POST /api/chatbot/sessions/:id/messages` — send follow-up messages
+    - `POST /api/chatbot/sessions/:id/resolve` — mark a conversation as resolved
+    - `GET /api/chatbot/sessions` and `GET /api/chatbot/sessions/:id` — fetch conversation history
+- Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) for the assistant. Without it the API will throw an error at startup.
+- The React app now ships with a floating “Need help?” chat widget (see `raddazle-react/src/components/ChatWidget.js`). Users must be logged in to chat so the backend can tie complaints to their profile.
 
