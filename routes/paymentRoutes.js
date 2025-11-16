@@ -5,6 +5,12 @@ import {
   getMyPayments,
   getAllPayments,
   updatePaymentStatus,
+  initPaystackPayment,
+  verifyPaystackPayment,
+  getBankInfo,
+  submitBankTransfer,
+  initFlutterwavePayment,
+  verifyFlutterwavePayment,
 } from "../controllers/paymentController.js"
 import { protect, admin } from "../middleware/authMiddleware.js"
 import { body } from "express-validator"
@@ -36,5 +42,17 @@ router.route("/").post(protect, validatePaymentProcess, processPayment).get(prot
 router.route("/mypayments").get(protect, getMyPayments)
 
 router.route("/:id").get(protect, getPaymentById).put(protect, admin, validatePaymentStatus, updatePaymentStatus)
+
+// Paystack
+router.post("/paystack/init", protect, initPaystackPayment)
+router.post("/paystack/verify", protect, verifyPaystackPayment)
+
+// Bank transfer
+router.get("/bank-info", getBankInfo)
+router.post("/bank-transfer/submit", protect, submitBankTransfer)
+
+// Flutterwave
+router.post("/flutterwave/init", protect, initFlutterwavePayment)
+router.post("/flutterwave/verify", protect, verifyFlutterwavePayment)
 
 export default router

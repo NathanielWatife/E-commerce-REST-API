@@ -23,6 +23,17 @@ E-commerce REST API built with Node.js, Express and MongoDB.
          CLIENT_URL=http://localhost:3000 # used in email links for verify/reset
          OPENAI_API_KEY=sk-...
          OPENAI_MODEL=gpt-4o-mini # optional override
+         
+         # Payments (optional)
+         PAYSTACK_SECRET_KEY=sk_live_or_test_xxx
+         BANK_ACCOUNT_NAME=Raddazle Ltd
+         BANK_ACCOUNT_NUMBER=0000000000
+         BANK_BANK_NAME=Your Bank Name
+         BANK_TRANSFER_INSTRUCTIONS=Use your Order ID as reference.
+         
+         # Flutterwave (optional)
+         FLW_SECRET_KEY=FLWSECK-xxxx
+         # Frontend must set REACT_APP_FLW_PUBLIC_KEY=FLWPUBK-xxxx in raddazle-react/.env
 
      - Start backend (dev):
 
@@ -46,6 +57,28 @@ E-commerce REST API built with Node.js, Express and MongoDB.
          npm run dev
 
 Notes about authentication and cookies
+## Payments
+
+Supported methods:
+
+- Paystack (card/USSD/bank channels) — SPA uses Paystack Inline. Backend needs `PAYSTACK_SECRET_KEY`. Frontend needs `REACT_APP_PAYSTACK_PUBLIC_KEY`.
+- Bank Transfer — Shows bank details and lets customer submit a reference and optional proof image. Admin can mark payment as completed from Payments list.
+ - Flutterwave — SPA uses Flutterwave Inline. Backend needs `FLW_SECRET_KEY`. Frontend needs `REACT_APP_FLW_PUBLIC_KEY`.
+
+Backend endpoints (selected):
+
+- `POST /api/payments/paystack/init` — initialize a Paystack transaction for an order
+- `POST /api/payments/paystack/verify` — verify a Paystack reference and mark order paid
+ - `POST /api/payments/flutterwave/init` — init Flutterwave with a generated `txRef`
+ - `POST /api/payments/flutterwave/verify` — verify a Flutterwave reference and mark order paid
+- `GET /api/payments/bank-info` — fetch bank transfer details
+- `POST /api/payments/bank-transfer/submit` — submit transfer reference/proof and set order to pending review
+
+Frontend setup:
+
+- Add `REACT_APP_PAYSTACK_PUBLIC_KEY=pk_test_or_live_xxx` to `raddazle-react/.env`.
+- `public/index.html` includes `<script src="https://js.paystack.co/v1/inline.js"></script>`.
+
 
 - The backend sets an httpOnly cookie for the JWT. The frontend axios instance is configured with `withCredentials: true` so cookies are sent on requests.
 - For token-in-header flows the frontend still reads a local token from localStorage and sets the `Authorization` header. Both approaches are supported.

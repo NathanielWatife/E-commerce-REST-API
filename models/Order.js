@@ -43,7 +43,7 @@ const orderSchema = new mongoose.Schema(
         },
         paymentMethod: {
             type: String,
-            enum: ["card", "bank-transfer", "ussd", "crypto"],
+            enum: ["card", "bank-transfer", "ussd", "crypto", "cod"],
             required: true,
         },
         paymentResult: {
