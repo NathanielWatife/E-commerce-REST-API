@@ -93,7 +93,7 @@ export const signup = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message : undefined
+			error: process.env.NODE_ENV ? error.message : undefined
 		})
 	}
 };
@@ -183,7 +183,7 @@ export const login = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message : undefined
+			error: process.env.NODE_ENV ? error.message : undefined
 		})
 	}
 };
@@ -232,7 +232,7 @@ export const verifyEmail = async (req, res) => {
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
-		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+		error: process.env.NODE_ENV ? error.message : undefined,
 	  })
 	}
   }
@@ -289,7 +289,7 @@ export const verifyEmail = async (req, res) => {
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
-		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+		error: process.env.NODE_ENV ? error.message : undefined,
 	  })
 	}
   }
@@ -360,7 +360,7 @@ export const forgotPassword = async (req, res) => {
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
-		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+		error: process.env.NODE_ENV ? error.message : undefined,
 	  })
 	}
   }
@@ -399,7 +399,7 @@ export const forgotPassword = async (req, res) => {
 	  return res.status(500).json({
 		success: false,
 		message: "Internal server error",
-		error: process.env.NODE_ENV === "development" ? error.message : undefined,
+		error: process.env.NODE_ENV ? error.message : undefined,
 	  })
 	}
   }
@@ -425,7 +425,7 @@ export const getCurrentUser = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message : undefined,
+			error: process.env.NODE_ENV ? error.message : undefined,
 		})
 	}
 }

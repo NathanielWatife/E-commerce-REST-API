@@ -119,7 +119,7 @@ export const createOrder = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -159,7 +159,7 @@ export const getOrderById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -233,7 +233,7 @@ export const updateOrderToPaid = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -281,7 +281,7 @@ export const updateOrderToDelivered = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -301,7 +301,7 @@ export const getMyOrders = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -332,7 +332,7 @@ export const getOrders = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -395,7 +395,7 @@ export const updateOrderStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -480,7 +480,7 @@ export const cancelOrder = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -521,6 +521,6 @@ export const shipOrder = async (req, res) => {
     return res.status(200).json({ success: true, order: updatedOrder })
   } catch (error) {
     logger.error("Ship order error:", error)
-    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV === "development" ? error.message : undefined })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }

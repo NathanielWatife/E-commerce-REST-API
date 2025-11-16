@@ -7,18 +7,57 @@ import logger from "../utils/logger.js"
 // @access  Public
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({}).sort({ name: 1 })
+    const search = (req.query.search || '').trim();
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 0, 0), 200); // 0 = no pagination
+    const includeCounts = String(req.query.includeCounts || '').toLowerCase() === 'true';
+
+    const filter = {};
+    if (search) {
+      filter.name = { $regex: new RegExp(search, 'i') };
+    }
+
+    const baseQuery = Category.find(filter).sort({ name: 1 });
+
+    let categories;
+    let count;
+    let pages = 1;
+    if (limit > 0) {
+      count = await Category.countDocuments(filter);
+      pages = Math.max(Math.ceil(count / limit), 1);
+      categories = await baseQuery.skip((page - 1) * limit).limit(limit);
+    } else {
+      categories = await baseQuery;
+      count = categories.length;
+    }
+
+    if (includeCounts) {
+      // Compute product counts per category
+      const { Product } = await import('../models/Product.js');
+      const agg = await Product.aggregate([
+        { $match: { category: { $ne: null } } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+      ]);
+      const countMap = new Map(agg.map(a => [String(a._id), a.count]));
+      categories = categories.map(c => ({
+        ...c.toObject(),
+        productCount: countMap.get(String(c._id)) || 0,
+      }));
+    }
 
     return res.status(200).json({
       success: true,
       categories,
+      page,
+      pages,
+      count,
     })
   } catch (error) {
     logger.error("Get categories error:", error)
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -46,7 +85,7 @@ export const getCategoryById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -92,7 +131,7 @@ export const createCategory = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -148,7 +187,7 @@ export const updateCategory = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -178,7 +217,7 @@ export const deleteCategory = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }

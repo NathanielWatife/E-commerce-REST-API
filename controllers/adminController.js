@@ -7,15 +7,12 @@ import logger from "../utils/logger.js";
 // get admin dashboarb statistics admin/private
 export const getDashBoardStatistics = async (req, res) => {
     try {
-    // get total users
         const totalUsers = await User.countDocuments();
         const totalAdmins = await User.countDocuments({ role: {
             $in: ["admin", "super-admin"]
         } });
         const verifiedUsers = await User.countDocuments({ isVerified: true });
-    const activeUsers = await User.countDocuments({ isActive: true });
-
-        // Additional commerce stats
+        const activeUsers = await User.countDocuments({ isActive: true });
         const totalProducts = await Product.countDocuments();
         const totalOrders = await Order.countDocuments();
         const recentOrders = await Order.find({})
@@ -75,7 +72,7 @@ export const getDashBoardStatistics = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+            error: process.env.NODE_ENV ? error.message : undefined,
         });
     }
 };
@@ -93,7 +90,6 @@ export const getAdminUsers = async (req, res) => {
         const sortBy = req.query.sort || "createdAt";
         const sortOrder = req.query.order === "asc" ? 1 : -1;
 
-        // filter the objects
         let filter = {};
 
         if (search) {
@@ -105,9 +101,8 @@ export const getAdminUsers = async (req, res) => {
             ];
         }
         if (role) filter.role = role;
-    if (status) filter.accountStatus = status;
-    if (verified !== undefined) filter.isVerified = verified === "true";
-
+        if (status) filter.accountStatus = status;
+        if (verified !== undefined) filter.isVerified = verified === "true";
 
         const count = await User.countDocuments(filter);
         const users = await User.find(filter)
@@ -140,7 +135,7 @@ export const getAdminUsers = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+            error: process.env.NODE_ENV ? error.message : undefined,
         });
     }
 };
@@ -157,7 +152,6 @@ export const updateAdminUser = async (req, res) => {
 
     try {
         const user = await User.findById(req.params.id);
-
         if (!user){
             return res.status(404).json({
                 success: false,
@@ -173,9 +167,7 @@ export const updateAdminUser = async (req, res) => {
             });
         }
 
-    const { role, accountStatus, isActive, isVerified } = req.body;
-
-        // update user fields
+        const { role, accountStatus, isActive, isVerified } = req.body;
         if (role && ["user", "admin", "super-admin"].includes(role)) {
             user.role = role;
         }
@@ -216,7 +208,7 @@ export const updateAdminUser = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+            error: process.env.NODE_ENV ? error.message : undefined,
         });
     }
 };
@@ -296,7 +288,7 @@ export const bulkUserActions = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+            error: process.env.NODE_ENV ? error.message : undefined,
         });
     }
 };
@@ -331,7 +323,7 @@ export const getUserActivityLogs = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+            error: process.env.NODE_ENV ? error.message : undefined,
         });
     }
 };
@@ -375,7 +367,7 @@ export const exportUserData = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined,
+            error: process.env.NODE_ENV ? error.message : undefined,
         });
     }
 };

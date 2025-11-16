@@ -37,7 +37,7 @@ export const getUserProfile = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -93,7 +93,7 @@ export const updateUserProfile = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -136,7 +136,7 @@ export const updateUserAvatar = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -201,7 +201,7 @@ export const addBillingAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -266,7 +266,7 @@ export const updateBillingAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -319,7 +319,7 @@ export const deleteBillingAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -384,7 +384,7 @@ export const addShippingAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -449,7 +449,7 @@ export const updateShippingAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -502,7 +502,7 @@ export const deleteShippingAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -534,7 +534,7 @@ export const getUsers = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -561,7 +561,7 @@ export const getUserById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -611,7 +611,7 @@ export const updateUser = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -647,7 +647,7 @@ export const deleteUser = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }

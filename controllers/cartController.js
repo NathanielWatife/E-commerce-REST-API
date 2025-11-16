@@ -32,7 +32,7 @@ export const getCart = async(req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message: undefined
+			error: process.env.NODE_ENV ? error.message: undefined
 		})
 	}
 };
@@ -114,7 +114,7 @@ export const addToCart = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message : undefined
+			error: process.env.NODE_ENV ? error.message : undefined
 		});
 	}
 };
@@ -196,7 +196,7 @@ export const updateCartItem = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message : undefined
+			error: process.env.NODE_ENV ? error.message : undefined
 		});
 	};
 };
@@ -245,7 +245,7 @@ export const removeFromCart = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message : undefined
+			error: process.env.NODE_ENV ? error.message : undefined
 		});
 	}
 };
@@ -280,7 +280,7 @@ export const clearCart = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
-			error: process.env.NODE_ENV === "development" ? error.message: undefined
+			error: process.env.NODE_ENV ? error.message: undefined
 		});
 	}
 };

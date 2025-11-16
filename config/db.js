@@ -16,8 +16,7 @@ export const connectDB = async () => {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             family: 4,
-            // Add production-specific options
-            ...(process.env.NODE_ENV === 'production' && {
+            ...(process.env.NODE_ENV && {
                 retryWrites: true,
                 w: 'majority'
             })

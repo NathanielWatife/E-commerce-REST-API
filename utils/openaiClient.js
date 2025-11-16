@@ -20,9 +20,9 @@ export const getOpenAIClient = () => {
 };
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const SYSTEM_PROMPT = `You are Raddazle's helpful customer care assistant. You help customers with order complaints, shipping issues, and product questions. Always respond in a friendly, empathetic tone, collect relevant details, and suggest next steps. Keep replies concise (under 120 words) and offer to escalate to human support when necessary.`;
+const SYSTEM_PROMPT = process.env.CHAT_SYSTEM_PROMPT || `You are Raddazle's helpful customer care assistant. You help customers with order complaints, shipping issues, and product questions. Always respond in a friendly, empathetic tone, collect relevant details, and suggest next steps. Keep replies concise (under 120 words) and offer to escalate to human support when necessary.`;
 
-export const generateComplaintReply = async (conversation) => {
+export const generateComplaintReply = async (conversation, meta = {}) => {
   // Guard for missing API key
   if (!isChatConfigured()) {
     const err = new Error("Chat is not configured");
@@ -43,6 +43,19 @@ export const generateComplaintReply = async (conversation) => {
         })),
       ],
     });
+
+    // Usage logging
+    try {
+      const usage = completion.usage || {};
+      logger.info("OpenAI usage", {
+        model: DEFAULT_MODEL,
+        prompt_tokens: usage.prompt_tokens,
+        completion_tokens: usage.completion_tokens,
+        total_tokens: usage.total_tokens,
+        userId: meta.userId,
+        sessionId: meta.sessionId,
+      });
+    } catch (e) { /* noop */ }
 
     const assistantMessage = completion.choices?.[0]?.message?.content?.trim();
     if (!assistantMessage) {

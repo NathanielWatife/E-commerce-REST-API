@@ -48,7 +48,7 @@ export const getProducts = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         })
     }
 };
@@ -82,7 +82,7 @@ export const getProductById = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         });
     }
 };
@@ -131,7 +131,7 @@ export const createProduct = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server Error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         }) 
     }
 };
@@ -231,7 +231,7 @@ export const updateProduct = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         });
     }
 };
@@ -279,7 +279,7 @@ export const deleteProduct = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         });
     }
 };
@@ -339,7 +339,7 @@ export const createProductReview = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         });
     }
 };
@@ -359,7 +359,7 @@ export const getTopProduct = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
-            error: process.env.NODE_ENV === "development" ? error.message : undefined
+            error: process.env.NODE_ENV ? error.message : undefined
         });
     }
 };
@@ -401,7 +401,7 @@ export const adjustInventory = async (req, res) => {
         return res.status(200).json({ success: true, product: saved })
     } catch (error) {
         logger.error("Adjust inventory error:", error)
-        return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV === "development" ? error.message : undefined })
+        return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
     }
 }
 
@@ -422,6 +422,6 @@ export const getInventoryHistory = async (req, res) => {
         return res.status(200).json({ success: true, history: items, page, pages: Math.ceil(count / pageSize), count })
     } catch (error) {
         logger.error("Get inventory history error:", error)
-        return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV === "development" ? error.message : undefined })
+        return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
     }
 }

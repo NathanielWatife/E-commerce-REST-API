@@ -30,7 +30,6 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
     credentials: true,
-    // allow preflight cache for 600 seconds
     optionsSuccessStatus: 200,
     maxAge: 600,
   })
@@ -64,8 +63,7 @@ app.use((err, req, res, next) => {
   res.json({
     success: false,
     message: err.message,
-    // include stack trace in development only
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+    stack: process.env.NODE_ENV ? err.stack : undefined
   })
 })
 

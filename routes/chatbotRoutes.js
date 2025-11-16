@@ -1,5 +1,6 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
+import { rateLimitChatbot } from "../middleware/rateLimiter.js";
 import {
   createChatSession,
   getChatSession,
@@ -11,6 +12,7 @@ import {
 const router = express.Router();
 
 router.use(protect);
+router.use(rateLimitChatbot);
 
 router.route("/sessions")
   .get(listChatSessions)

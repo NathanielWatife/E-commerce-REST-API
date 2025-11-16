@@ -39,7 +39,7 @@ export const createChatSession = async (req, res) => {
     const initialMessage = ensureContent(message);
     if (initialMessage) {
       session.messages.push({ role: "user", content: initialMessage });
-      const reply = await generateComplaintReply(session.messages);
+      const reply = await generateComplaintReply(session.messages, { userId: req.user._id, sessionId: session._id });
       appendAssistantResponse(session, reply);
     }
 
@@ -99,7 +99,7 @@ export const sendChatMessage = async (req, res) => {
     session.messages.push({ role: "user", content });
     session.messages = trimMessages(session.messages);
 
-    const reply = await generateComplaintReply(session.messages);
+    const reply = await generateComplaintReply(session.messages, { userId: req.user._id, sessionId: session._id });
     appendAssistantResponse(session, reply);
     await session.save();
 

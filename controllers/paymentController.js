@@ -92,7 +92,7 @@ export const processPayment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -131,7 +131,7 @@ export const getPaymentById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -152,7 +152,7 @@ export const getMyPayments = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -185,7 +185,7 @@ export const getAllPayments = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
@@ -238,7 +238,7 @@ export const updatePaymentStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
 }
