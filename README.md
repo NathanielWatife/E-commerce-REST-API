@@ -71,6 +71,28 @@ Backend endpoints (selected):
 - `POST /api/payments/paystack/verify` — verify a Paystack reference and mark order paid
  - `POST /api/payments/flutterwave/init` — init Flutterwave with a generated `txRef`
  - `POST /api/payments/flutterwave/verify` — verify a Flutterwave reference and mark order paid
+- `POST /api/payments/:id/refund` (admin) — trigger a refund via the gateway and mark order refunded/cancelled
+
+Webhooks (recommended for resilience)
+
+- Paystack webhook: `POST /api/payments/paystack/webhook`
+    - Set URL in Paystack Dashboard.
+    - We verify `x-paystack-signature` using `sha512` over the raw JSON body with your `PAYSTACK_SECRET_KEY`.
+    - Ensure your server can receive the route publicly.
+
+- Flutterwave webhook: `POST /api/payments/flutterwave/webhook`
+    - Set URL and `Secret Hash` in Flutterwave Dashboard (use env `FLW_SECRET_HASH`).
+    - We verify the `verif-hash` header equals your `FLW_SECRET_HASH`.
+
+Note: webhooks require raw body parsing for signature verification; these routes are mounted with `express.raw({ type: 'application/json' })` before `express.json()` in `index.js`.
+
+Background reconciliation
+
+- A reconciler runs periodically to re-verify pending card payments by reference (config via env):
+    - `PAYMENT_RECON_INTERVAL_MS` (default 300000)
+    - `PAYMENT_RECON_MIN_AGE_MS` (default 120000)
+    - `PAYMENT_RECON_FAIL_AFTER_MS` (default 86400000)
+    - After TTL, pending payments are marked as failed. Successful verifications mark orders paid.
 - `GET /api/payments/bank-info` — fetch bank transfer details
 - `POST /api/payments/bank-transfer/submit` — submit transfer reference/proof and set order to pending review
 

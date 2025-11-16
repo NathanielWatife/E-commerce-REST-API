@@ -17,9 +17,15 @@ import chatbotRoutes from './routes/chatbotRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
 import requestLogger from './middleware/requestLogger.js'
 import logger from "./utils/logger.js";
+import { paystackWebhook, flutterwaveWebhook } from './controllers/paymentController.js'
+import { startPaymentReconciler } from './utils/paymentReconciler.js'
 
 dotenv.config();
 const app = express();
+
+// Webhooks MUST be mounted with raw body BEFORE json middleware
+app.post('/api/payments/paystack/webhook', express.raw({ type: 'application/json' }), paystackWebhook)
+app.post('/api/payments/flutterwave/webhook', express.raw({ type: 'application/json' }), flutterwaveWebhook)
 
 // middleware
 app.use(express.json());
@@ -83,4 +89,6 @@ const PORT = process.env.PORT
 app.listen(PORT, () => {
   connectDB();
   logger.info(`Backend Server running on ${PORT}`);
+  // Start background reconciler
+  try { startPaymentReconciler(); } catch (e) { logger.warn('Reconciler failed to start', e); }
 });

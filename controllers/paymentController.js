@@ -10,6 +10,7 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || ""
 const PAYSTACK_BASE = "https://api.paystack.co"
 const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY || ""
 const FLW_BASE = "https://api.flutterwave.com/v3"
+const FLW_SECRET_HASH = process.env.FLW_SECRET_HASH || ""
 
 async function psFetch(path, options = {}) {
   const headers = options.headers || {}
@@ -545,5 +546,166 @@ export const verifyFlutterwavePayment = async (req, res) => {
   } catch (error) {
     logger.error('Verify Flutterwave error:', error)
     return res.status(500).json({ success: false, message: error.message || 'Server error' })
+  }
+}
+
+// =============== Webhooks ===============
+
+// @desc    Paystack webhook receiver (raw body required)
+// @route   POST /api/payments/paystack/webhook
+// @access  Public (signature verified)
+export const paystackWebhook = async (req, res) => {
+  try {
+    if (!PAYSTACK_SECRET_KEY) return res.sendStatus(204)
+    const signature = req.headers['x-paystack-signature']
+    if (!signature) return res.status(400).send('Missing signature')
+
+    const rawBody = req.body instanceof Buffer ? req.body : Buffer.from(req.body)
+    const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY).update(rawBody).digest('hex')
+    if (hash !== signature) return res.status(401).send('Invalid signature')
+
+    const event = JSON.parse(rawBody.toString('utf8'))
+    const type = event?.event
+    const data = event?.data
+    const reference = data?.reference
+    if (!reference) return res.status(200).send('ok')
+
+    if (type === 'charge.success') {
+      const payment = await Payment.findOne({ transactionId: reference })
+      if (payment && payment.status !== 'completed') {
+        const order = await Order.findById(payment.order)
+        if (order) {
+          payment.status = 'completed'
+          payment.paymentDetails = { ...(payment.paymentDetails || {}), webhook: event }
+          await payment.save()
+
+          order.isPaid = true
+          order.paidAt = new Date()
+          order.status = 'processing'
+          order.paymentResult = {
+            id: reference,
+            status: 'completed',
+            update_time: new Date().toISOString(),
+            email_address: data?.customer?.email,
+            provider: 'paystack',
+          }
+          await order.save()
+
+          // send confirmation email
+          try {
+            const user = await User.findById(order.user)
+            const paymentInfo = { _id: reference, paymentMethod: order.paymentMethod, amount: order.totalPrice, currency: 'NGN', createdAt: new Date() }
+            const content = generatePaymentConfirmationEmail(user?.name || 'Customer', payment, order)
+            await sendEmail({ email: user?.email, subject: `Payment Confirmation for Order #${order._id}`, message: content })
+          } catch {}
+        }
+      }
+    }
+    return res.status(200).send('ok')
+  } catch (err) {
+    logger.error('Paystack webhook error:', err)
+    return res.status(500).send('error')
+  }
+}
+
+// @desc    Flutterwave webhook receiver (raw body required)
+// @route   POST /api/payments/flutterwave/webhook
+// @access  Public (hash verified)
+export const flutterwaveWebhook = async (req, res) => {
+  try {
+    if (!FLW_SECRET_HASH) return res.sendStatus(204)
+    const headerHash = req.headers['verif-hash'] || req.headers['verif_hash']
+    if (!headerHash) return res.status(400).send('Missing signature')
+
+    const rawBody = req.body instanceof Buffer ? req.body : Buffer.from(req.body)
+    const computed = crypto.createHash('sha256').update(rawBody).digest('hex')
+    // Flutterwave expects direct string compare with provided secret hash, not HMAC
+    if (headerHash !== FLW_SECRET_HASH) return res.status(401).send('Invalid signature')
+
+    const event = JSON.parse(rawBody.toString('utf8'))
+    const data = event?.data
+    const status = data?.status
+    const txRef = data?.tx_ref
+    if (!txRef) return res.status(200).send('ok')
+
+    if (status === 'successful') {
+      const payment = await Payment.findOne({ transactionId: txRef })
+      if (payment && payment.status !== 'completed') {
+        const order = await Order.findById(payment.order)
+        if (order) {
+          payment.status = 'completed'
+          payment.paymentDetails = { ...(payment.paymentDetails || {}), webhook: event }
+          await payment.save()
+
+          order.isPaid = true
+          order.paidAt = new Date()
+          order.status = 'processing'
+          order.paymentResult = {
+            id: String(data?.id || txRef),
+            status: 'completed',
+            update_time: new Date().toISOString(),
+            email_address: data?.customer?.email,
+            provider: 'flutterwave',
+          }
+          await order.save()
+
+          // send confirmation email
+          try {
+            const user = await User.findById(order.user)
+            const paymentInfo = { _id: String(data?.id || txRef), paymentMethod: order.paymentMethod, amount: order.totalPrice, currency: 'NGN', createdAt: new Date() }
+            const content = generatePaymentConfirmationEmail(user?.name || 'Customer', payment, order)
+            await sendEmail({ email: user?.email, subject: `Payment Confirmation for Order #${order._id}`, message: content })
+          } catch {}
+        }
+      }
+    }
+    return res.status(200).send('ok')
+  } catch (err) {
+    logger.error('Flutterwave webhook error:', err)
+    return res.status(500).send('error')
+  }
+}
+
+// @desc    Refund a completed payment (admin)
+// @route   POST /api/payments/:id/refund
+// @access  Private/Admin
+export const refundPayment = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+    if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' })
+
+    const order = await Order.findById(payment.order)
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' })
+
+    const provider = payment?.paymentDetails?.provider
+    if (provider === 'paystack') {
+      if (!PAYSTACK_SECRET_KEY) return res.status(503).json({ success: false, message: 'Paystack not configured' })
+      // Paystack refund: POST /refund with transaction reference/id
+      await psFetch('/refund', { method: 'POST', body: JSON.stringify({ transaction: payment.transactionId }) })
+    } else if (provider === 'flutterwave') {
+      if (!FLW_SECRET_KEY) return res.status(503).json({ success: false, message: 'Flutterwave not configured' })
+      // Flutterwave needs transaction ID; try from stored details, else verify by reference
+      let flwId = payment?.paymentDetails?.flutterwave?.id
+      if (!flwId) {
+        const verify = await flwFetch(`/transactions/verify_by_reference?tx_ref=${encodeURIComponent(payment.transactionId)}`)
+        flwId = verify?.data?.id
+      }
+      if (!flwId) return res.status(400).json({ success: false, message: 'Cannot determine Flutterwave transaction id' })
+      await flwFetch(`/transactions/${encodeURIComponent(flwId)}/refund`, { method: 'POST', body: JSON.stringify({}) })
+    } else {
+      return res.status(400).json({ success: false, message: 'Unsupported provider for refund' })
+    }
+
+    payment.status = 'refunded'
+    await payment.save()
+
+    order.isPaid = false
+    order.status = 'cancelled'
+    await order.save()
+
+    return res.status(200).json({ success: true, refunded: true })
+  } catch (err) {
+    logger.error('Refund payment error:', err)
+    return res.status(500).json({ success: false, message: err.message || 'Server error' })
   }
 }

@@ -11,6 +11,7 @@ import {
   submitBankTransfer,
   initFlutterwavePayment,
   verifyFlutterwavePayment,
+  refundPayment,
 } from "../controllers/paymentController.js"
 import { protect, admin } from "../middleware/authMiddleware.js"
 import { body } from "express-validator"
@@ -54,5 +55,8 @@ router.post("/bank-transfer/submit", protect, submitBankTransfer)
 // Flutterwave
 router.post("/flutterwave/init", protect, initFlutterwavePayment)
 router.post("/flutterwave/verify", protect, verifyFlutterwavePayment)
+
+// Refund (admin)
+router.post('/:id/refund', protect, admin, refundPayment)
 
 export default router
