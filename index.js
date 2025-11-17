@@ -15,6 +15,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import notesRoutes from './routes/notesRoutes.js'
 import chatbotRoutes from './routes/chatbotRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
+import contactRoutes from './routes/contactRoutes.js'
 import requestLogger from './middleware/requestLogger.js'
 import logger from "./utils/logger.js";
 import { paystackWebhook, flutterwaveWebhook } from './controllers/paymentController.js'
@@ -53,6 +54,7 @@ app.use("/api/orders", orderRoutes)
 app.use("/api/payments", paymentRoutes)
 app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/contact', contactRoutes)
 
 // simple health check
 app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))

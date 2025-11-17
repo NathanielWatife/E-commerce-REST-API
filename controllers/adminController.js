@@ -3,6 +3,7 @@ import { Order } from "../models/Order.js";
 import { Product } from "../models/Product.js";
 import { validationResult } from "express-validator";
 import logger from "../utils/logger.js";
+import { WebhookEvent } from "../models/WebhookEvent.js";
 
 // get admin dashboarb statistics admin/private
 export const getDashBoardStatistics = async (req, res) => {
@@ -371,3 +372,63 @@ export const exportUserData = async (req, res) => {
         });
     }
 };
+
+// get webhook events (admin) with filters
+export const getWebhookEvents = async (req, res) => {
+    try {
+        const pageSize = Math.min(Number(req.query.pageSize) || 20, 100);
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const provider = req.query.provider;
+        const handled = req.query.handled;
+        const reference = req.query.reference;
+        const status = req.query.status;
+        const q = (req.query.q || '').trim();
+
+        const filter = {};
+        if (provider) filter.provider = provider;
+        if (status) filter.status = status;
+        if (reference) filter.reference = reference;
+        if (handled !== undefined) filter.handled = handled === 'true';
+        if (q) filter.eventId = { $regex: new RegExp(q, 'i') };
+
+        const count = await WebhookEvent.countDocuments(filter);
+        const events = await WebhookEvent.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1))
+            .select('-raw'); // do not expose raw body by default
+
+        // Mask sensitive payload fields lightly
+        const masked = events.map(e => {
+            const payload = e.payload || {};
+            const safePayload = { ...payload };
+            // redact email/account numbers if present
+            try {
+                if (safePayload.data?.customer?.email) {
+                    const em = safePayload.data.customer.email;
+                    const [user, domain] = em.split('@');
+                    safePayload.data.customer.email = `${user?.slice(0,2) || ''}***@${domain || ''}`;
+                }
+                if (safePayload.data?.authorization?.account_number) {
+                    const acc = safePayload.data.authorization.account_number;
+                    safePayload.data.authorization.account_number = acc ? `****${String(acc).slice(-4)}` : acc;
+                }
+                if (safePayload.data?.card?.last_4) {
+                    safePayload.data.card.last_4 = `****${safePayload.data.card.last_4}`;
+                }
+            } catch {}
+            return { ...e.toObject(), payload: safePayload };
+        });
+
+        return res.status(200).json({
+            success: true,
+            events: masked,
+            page,
+            pages: Math.max(Math.ceil(count / pageSize), 1),
+            count,
+        });
+    } catch (error) {
+        logger.error('Get webhook events error:', error);
+        return res.status(500).json({ success: false, message: 'Server error', error: process.env.NODE_ENV ? error.message : undefined });
+    }
+}

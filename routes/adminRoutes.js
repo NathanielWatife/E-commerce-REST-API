@@ -5,7 +5,8 @@ import {
     updateAdminUser,
     bulkUserActions,
     getUserActivityLogs,
-    exportUserData
+    exportUserData,
+    getWebhookEvents
 } from "../controllers/adminController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import { body } from "express-validator";
@@ -33,5 +34,6 @@ router.put("/users/:id", protect, admin, validateUpdateAdminUser, updateAdminUse
 router.post("/users/bulk", protect, admin, validateBulkActions, bulkUserActions);
 router.get("/users/:id/activity", protect, admin, getUserActivityLogs);
 router.get("/users/export", protect, admin, exportUserData);
+router.get("/webhook-events", protect, admin, getWebhookEvents);
 
 export default router;

@@ -93,6 +93,11 @@ Background reconciliation
     - `PAYMENT_RECON_MIN_AGE_MS` (default 120000)
     - `PAYMENT_RECON_FAIL_AFTER_MS` (default 86400000)
     - After TTL, pending payments are marked as failed. Successful verifications mark orders paid.
+
+Webhook event logging & idempotency
+
+- All webhook deliveries are recorded in `WebhookEvent` with a unique `eventId` (sha256 of the raw body) and marked `handled` when processed.
+- Duplicate deliveries are ignored safely.
 - `GET /api/payments/bank-info` — fetch bank transfer details
 - `POST /api/payments/bank-transfer/submit` — submit transfer reference/proof and set order to pending review
 

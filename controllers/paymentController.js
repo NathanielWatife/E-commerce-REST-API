@@ -3,6 +3,7 @@ import { Order } from "../models/Order.js"
 import { User } from "../models/User.js"
 import { validationResult } from "express-validator"
 import { sendEmail, generatePaymentConfirmationEmail } from "../utils/sendEmail.js"
+import { WebhookEvent } from "../models/WebhookEvent.js"
 import logger from "../utils/logger.js"
 import crypto from "crypto"
 
@@ -376,6 +377,9 @@ export const verifyPaystackPayment = async (req, res) => {
 
     const payment = await Payment.findOne({ transactionId: reference })
     if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' })
+    if (payment.status === 'completed') {
+      return res.status(200).json({ success: true, verified: true })
+    }
 
     const order = await Order.findById(payment.order)
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' })
@@ -387,21 +391,25 @@ export const verifyPaystackPayment = async (req, res) => {
       logger.warn('Amount mismatch on verify', { expected: order.totalPrice, got: amountPaid })
     }
 
-    payment.status = 'completed'
-    payment.paymentDetails = { ...(payment.paymentDetails || {}), paystack: data }
-    await payment.save()
-
-    order.isPaid = true
-    order.paidAt = new Date()
-    order.status = 'processing'
-    order.paymentResult = {
-      id: reference,
-      status: 'completed',
-      update_time: new Date().toISOString(),
-      email_address: data?.customer?.email || req.user.email,
-      provider: 'paystack',
+    // Atomic transition: only mark completed if currently not completed
+    const updated = await Payment.findOneAndUpdate(
+      { _id: payment._id, status: { $ne: 'completed' } },
+      { $set: { status: 'completed', paymentDetails: { ...(payment.paymentDetails || {}), paystack: data } } },
+      { new: true }
+    )
+    if (updated) {
+      order.isPaid = true
+      order.paidAt = new Date()
+      order.status = 'processing'
+      order.paymentResult = {
+        id: reference,
+        status: 'completed',
+        update_time: new Date().toISOString(),
+        email_address: data?.customer?.email || req.user.email,
+        provider: 'paystack',
+      }
+      await order.save()
     }
-    await order.save()
 
     return res.status(200).json({ success: true, verified: true })
   } catch (error) {
@@ -522,25 +530,31 @@ export const verifyFlutterwavePayment = async (req, res) => {
 
     const payment = await Payment.findOne({ transactionId: txRef })
     if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' })
+    if (payment.status === 'completed') {
+      return res.status(200).json({ success: true, verified: true })
+    }
     const order = await Order.findById(payment.order)
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' })
     if (order.user.toString() !== req.user._id.toString()) return res.status(403).json({ success: false, message: 'Not authorized' })
 
-    payment.status = 'completed'
-    payment.paymentDetails = { ...(payment.paymentDetails || {}), flutterwave: data }
-    await payment.save()
-
-    order.isPaid = true
-    order.paidAt = new Date()
-    order.status = 'processing'
-    order.paymentResult = {
-      id: String(data?.id || txRef),
-      status: 'completed',
-      update_time: new Date().toISOString(),
-      email_address: data?.customer?.email,
-      provider: 'flutterwave',
+    const updated = await Payment.findOneAndUpdate(
+      { _id: payment._id, status: { $ne: 'completed' } },
+      { $set: { status: 'completed', paymentDetails: { ...(payment.paymentDetails || {}), flutterwave: data } } },
+      { new: true }
+    )
+    if (updated) {
+      order.isPaid = true
+      order.paidAt = new Date()
+      order.status = 'processing'
+      order.paymentResult = {
+        id: String(data?.id || txRef),
+        status: 'completed',
+        update_time: new Date().toISOString(),
+        email_address: data?.customer?.email,
+        provider: 'flutterwave',
+      }
+      await order.save()
     }
-    await order.save()
 
     return res.status(200).json({ success: true, verified: true })
   } catch (error) {
@@ -564,7 +578,17 @@ export const paystackWebhook = async (req, res) => {
     const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY).update(rawBody).digest('hex')
     if (hash !== signature) return res.status(401).send('Invalid signature')
 
-    const event = JSON.parse(rawBody.toString('utf8'))
+    const rawText = rawBody.toString('utf8')
+    const event = JSON.parse(rawText)
+    const eventId = crypto.createHash('sha256').update(rawBody).digest('hex')
+
+    // Upsert event log; if already handled, exit idempotently
+    const log = await WebhookEvent.findOneAndUpdate(
+      { eventId },
+      { $setOnInsert: { provider: 'paystack', signature, raw: rawText, payload: event, receivedAt: new Date() } },
+      { upsert: true, new: true }
+    )
+    if (log.handled) return res.status(200).send('ok')
     const type = event?.event
     const data = event?.data
     const reference = data?.reference
@@ -575,21 +599,24 @@ export const paystackWebhook = async (req, res) => {
       if (payment && payment.status !== 'completed') {
         const order = await Order.findById(payment.order)
         if (order) {
-          payment.status = 'completed'
-          payment.paymentDetails = { ...(payment.paymentDetails || {}), webhook: event }
-          await payment.save()
-
-          order.isPaid = true
-          order.paidAt = new Date()
-          order.status = 'processing'
-          order.paymentResult = {
-            id: reference,
-            status: 'completed',
-            update_time: new Date().toISOString(),
-            email_address: data?.customer?.email,
-            provider: 'paystack',
+          const updated = await Payment.findOneAndUpdate(
+            { _id: payment._id, status: { $ne: 'completed' } },
+            { $set: { status: 'completed', paymentDetails: { ...(payment.paymentDetails || {}), webhook: event } } },
+            { new: true }
+          )
+          if (updated) {
+            order.isPaid = true
+            order.paidAt = new Date()
+            order.status = 'processing'
+            order.paymentResult = {
+              id: reference,
+              status: 'completed',
+              update_time: new Date().toISOString(),
+              email_address: data?.customer?.email,
+              provider: 'paystack',
+            }
+            await order.save()
           }
-          await order.save()
 
           // send confirmation email
           try {
@@ -598,12 +625,20 @@ export const paystackWebhook = async (req, res) => {
             const content = generatePaymentConfirmationEmail(user?.name || 'Customer', payment, order)
             await sendEmail({ email: user?.email, subject: `Payment Confirmation for Order #${order._id}`, message: content })
           } catch {}
+          // attach refs to log
+          await WebhookEvent.updateOne({ _id: log._id }, { $set: { reference, payment: payment._id, order: order._id } })
         }
       }
     }
+    await WebhookEvent.updateOne({ _id: log._id }, { $set: { handled: true, status: 'processed', processedAt: new Date() } })
     return res.status(200).send('ok')
   } catch (err) {
     logger.error('Paystack webhook error:', err)
+    try {
+      const rawBody = req.body instanceof Buffer ? req.body : Buffer.from(req.body)
+      const eventId = crypto.createHash('sha256').update(rawBody).digest('hex')
+      await WebhookEvent.findOneAndUpdate({ eventId }, { $set: { handled: false, status: 'error', error: err.message } }, { upsert: true })
+    } catch {}
     return res.status(500).send('error')
   }
 }
@@ -622,7 +657,16 @@ export const flutterwaveWebhook = async (req, res) => {
     // Flutterwave expects direct string compare with provided secret hash, not HMAC
     if (headerHash !== FLW_SECRET_HASH) return res.status(401).send('Invalid signature')
 
-    const event = JSON.parse(rawBody.toString('utf8'))
+    const rawText = rawBody.toString('utf8')
+    const event = JSON.parse(rawText)
+    const eventId = crypto.createHash('sha256').update(rawBody).digest('hex')
+
+    const log = await WebhookEvent.findOneAndUpdate(
+      { eventId },
+      { $setOnInsert: { provider: 'flutterwave', signature: String(headerHash), raw: rawText, payload: event, receivedAt: new Date() } },
+      { upsert: true, new: true }
+    )
+    if (log.handled) return res.status(200).send('ok')
     const data = event?.data
     const status = data?.status
     const txRef = data?.tx_ref
@@ -633,21 +677,24 @@ export const flutterwaveWebhook = async (req, res) => {
       if (payment && payment.status !== 'completed') {
         const order = await Order.findById(payment.order)
         if (order) {
-          payment.status = 'completed'
-          payment.paymentDetails = { ...(payment.paymentDetails || {}), webhook: event }
-          await payment.save()
-
-          order.isPaid = true
-          order.paidAt = new Date()
-          order.status = 'processing'
-          order.paymentResult = {
-            id: String(data?.id || txRef),
-            status: 'completed',
-            update_time: new Date().toISOString(),
-            email_address: data?.customer?.email,
-            provider: 'flutterwave',
+          const updated = await Payment.findOneAndUpdate(
+            { _id: payment._id, status: { $ne: 'completed' } },
+            { $set: { status: 'completed', paymentDetails: { ...(payment.paymentDetails || {}), webhook: event } } },
+            { new: true }
+          )
+          if (updated) {
+            order.isPaid = true
+            order.paidAt = new Date()
+            order.status = 'processing'
+            order.paymentResult = {
+              id: String(data?.id || txRef),
+              status: 'completed',
+              update_time: new Date().toISOString(),
+              email_address: data?.customer?.email,
+              provider: 'flutterwave',
+            }
+            await order.save()
           }
-          await order.save()
 
           // send confirmation email
           try {
@@ -656,12 +703,19 @@ export const flutterwaveWebhook = async (req, res) => {
             const content = generatePaymentConfirmationEmail(user?.name || 'Customer', payment, order)
             await sendEmail({ email: user?.email, subject: `Payment Confirmation for Order #${order._id}`, message: content })
           } catch {}
+          await WebhookEvent.updateOne({ _id: log._id }, { $set: { reference: txRef, payment: payment._id, order: order._id } })
         }
       }
     }
+    await WebhookEvent.updateOne({ _id: log._id }, { $set: { handled: true, status: 'processed', processedAt: new Date() } })
     return res.status(200).send('ok')
   } catch (err) {
     logger.error('Flutterwave webhook error:', err)
+    try {
+      const rawBody = req.body instanceof Buffer ? req.body : Buffer.from(req.body)
+      const eventId = crypto.createHash('sha256').update(rawBody).digest('hex')
+      await WebhookEvent.findOneAndUpdate({ eventId }, { $set: { handled: false, status: 'error', error: err.message } }, { upsert: true })
+    } catch {}
     return res.status(500).send('error')
   }
 }
@@ -673,6 +727,7 @@ export const refundPayment = async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id)
     if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' })
+    if (payment.status === 'refunded') return res.status(200).json({ success: true, refunded: true })
 
     const order = await Order.findById(payment.order)
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' })
