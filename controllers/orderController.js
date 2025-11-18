@@ -213,7 +213,7 @@ export const updateOrderToPaid = async (req, res) => {
       _id: paymentId,
       paymentMethod: order.paymentMethod,
       amount: order.totalPrice,
-      currency: "USD",
+      currency: "NGN",
       createdAt: new Date(paymentUpdateTime),
     }
 

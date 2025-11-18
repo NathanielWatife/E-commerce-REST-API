@@ -95,9 +95,9 @@ export const processPayment = async (req, res) => {
       order: orderId,
       paymentMethod,
       amount: order.totalPrice,
-      currency: "USD", // Default currency, can be made dynamic
-      status: "completed", // In a real app, this would be determined by the payment gateway
-      transactionId: `TXN_${Date.now()}`, // In a real app, this would come from the payment gateway
+      currency: "NGN", // Default currency
+      status: "completed",
+      transactionId: `TXN_${Date.now()}`,
       paymentDetails,
     })
 

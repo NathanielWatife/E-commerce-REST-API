@@ -1,6 +1,16 @@
 import nodemailer from "nodemailer"
 import logger from "./logger.js"
 
+// Simple NGN currency formatter
+const formatCurrencyNGN = (amount) => {
+  try {
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount) || 0)
+  } catch {
+    const n = Number(amount || 0).toFixed(2)
+    return `₦${n.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`
+  }
+}
+
 let transporterSingleton = null
 
 const getTransporter = () => {
@@ -152,8 +162,8 @@ export const generateOrderConfirmationEmail = (name, order) => {
         </td>
         <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.name}</td>
         <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #ddd;">$${item.price.toFixed(2)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #ddd;">$${(item.price * item.quantity).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${formatCurrencyNGN(item.price)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${formatCurrencyNGN(item.price * item.quantity)}</td>
       </tr>
     `,
     )
@@ -188,19 +198,19 @@ export const generateOrderConfirmationEmail = (name, order) => {
         <tfoot>
           <tr>
             <td colspan="4" style="padding: 10px; text-align: right;"><strong>Items Total:</strong></td>
-            <td style="padding: 10px;">$${order.itemsPrice.toFixed(2)}</td>
+            <td style="padding: 10px;">${formatCurrencyNGN(order.itemsPrice)}</td>
           </tr>
           <tr>
             <td colspan="4" style="padding: 10px; text-align: right;"><strong>Shipping:</strong></td>
-            <td style="padding: 10px;">$${order.shippingPrice.toFixed(2)}</td>
+            <td style="padding: 10px;">${formatCurrencyNGN(order.shippingPrice)}</td>
           </tr>
           <tr>
             <td colspan="4" style="padding: 10px; text-align: right;"><strong>Tax:</strong></td>
-            <td style="padding: 10px;">$${order.taxPrice.toFixed(2)}</td>
+            <td style="padding: 10px;">${formatCurrencyNGN(order.taxPrice)}</td>
           </tr>
           <tr style="background-color: #f4f4f4;">
             <td colspan="4" style="padding: 10px; text-align: right;"><strong>Order Total:</strong></td>
-            <td style="padding: 10px;"><strong>$${order.totalPrice.toFixed(2)}</strong></td>
+            <td style="padding: 10px;"><strong>${formatCurrencyNGN(order.totalPrice)}</strong></td>
           </tr>
         </tfoot>
       </table>
