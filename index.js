@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import "./utils/ensureDebugCommon.js";
 import { connectDB } from "./config/db.js";
 import authRoutes  from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
