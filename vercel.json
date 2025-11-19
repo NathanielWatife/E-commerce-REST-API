@@ -9,7 +9,7 @@
   "functions": {
     "index.js": {
       "includeFiles": [
-        "node_modules/debug/src/common.js"
+        "node_modules/debug/src/**"
       ]
     }
   },
