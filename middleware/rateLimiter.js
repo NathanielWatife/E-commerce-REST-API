@@ -3,7 +3,7 @@ const buckets = new Map();
 const MAX = Number(process.env.CHATBOT_RATE_LIMIT_MAX || 20); // requests
 const WINDOW_MS = Number(process.env.CHATBOT_RATE_LIMIT_WINDOW_MS || 60_000); // 1 minute
 
-export function rateLimitChatbot(req, res, next) {
+function rateLimitChatbot(req, res, next) {
   try {
     const key = req.user?._id?.toString() || req.ip;
     const now = Date.now();
@@ -32,3 +32,5 @@ export function rateLimitChatbot(req, res, next) {
     next(err);
   }
 }
+
+module.exports = { rateLimitChatbot };

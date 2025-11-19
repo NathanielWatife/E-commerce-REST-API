@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer"
-import logger from "./logger.js"
+const nodemailer = require("nodemailer")
+const logger = require("./logger.js")
 
 // Simple NGN currency formatter
 const formatCurrencyNGN = (amount) => {
@@ -38,7 +38,7 @@ const getTransporter = () => {
 }
 
 // Send an email using nodemailer
-export const sendEmail = async (options) => {
+const sendEmail = async (options) => {
   try {
     const transporter = getTransporter()
     if (!transporter) {
@@ -60,7 +60,7 @@ export const sendEmail = async (options) => {
 }
 
 // Generate verification email content
-export const generateVerificationEmail = (name, token, email) => {
+const generateVerificationEmail = (name, token, email) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
   const verifyLink = `${clientUrl}/verify-email?email=${encodeURIComponent(email)}`
   return `
@@ -83,7 +83,7 @@ export const generateVerificationEmail = (name, token, email) => {
 }
 
 //Generate password reset email content
-export const generatePasswordResetEmail = (name, token, email) => {
+const generatePasswordResetEmail = (name, token, email) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
   const resetLink = `${clientUrl}/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(token)}`
   return `
@@ -106,7 +106,7 @@ export const generatePasswordResetEmail = (name, token, email) => {
 }
 
 // Generate welcome email content after successful registration
-export const generateWelcomeEmail = (name) => {
+const generateWelcomeEmail = (name) => {
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #333; text-align: center;">Welcome to Our Store!</h2>
@@ -127,7 +127,7 @@ export const generateWelcomeEmail = (name) => {
 }
 
 // Generate login notification email
-export const generateLoginNotificationEmail = (name, loginInfo) => {
+const generateLoginNotificationEmail = (name, loginInfo) => {
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #333; text-align: center;">New Login Detected</h2>
@@ -151,7 +151,7 @@ export const generateLoginNotificationEmail = (name, loginInfo) => {
  * @param {Object} order - Order information
  * @returns {string} - HTML email content
  */
-export const generateOrderConfirmationEmail = (name, order) => {
+const generateOrderConfirmationEmail = (name, order) => {
   // Generate order items HTML
   const orderItemsHtml = order.orderItems
     .map(
@@ -236,7 +236,7 @@ export const generateOrderConfirmationEmail = (name, order) => {
  * @param {Object} order - Order information
  * @returns {string} - HTML email content
  */
-export const generatePaymentConfirmationEmail = (name, payment, order) => {
+const generatePaymentConfirmationEmail = (name, payment, order) => {
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #333; text-align: center;">Payment Confirmation</h2>
@@ -265,7 +265,7 @@ export const generatePaymentConfirmationEmail = (name, payment, order) => {
  * @param {string} previousStatus - Previous order status
  * @returns {string} - HTML email content
  */
-export const generateOrderStatusUpdateEmail = (name, order, previousStatus) => {
+const generateOrderStatusUpdateEmail = (name, order, previousStatus) => {
   let statusMessage = ""
   let statusColor = ""
 
@@ -326,4 +326,15 @@ export const generateOrderStatusUpdateEmail = (name, order, previousStatus) => {
       <p>Best regards,<br>The Team</p>
     </div>
   `
+}
+
+module.exports = {
+  sendEmail,
+  generateVerificationEmail,
+  generatePasswordResetEmail,
+  generateWelcomeEmail,
+  generateLoginNotificationEmail,
+  generateOrderConfirmationEmail,
+  generatePaymentConfirmationEmail,
+  generateOrderStatusUpdateEmail,
 }

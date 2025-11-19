@@ -1,7 +1,7 @@
-import { sendEmail } from '../utils/sendEmail.js'
-import logger from '../utils/logger.js'
+const { sendEmail } = require('../utils/sendEmail.js')
+const logger = require('../utils/logger.js')
 
-export const submitContact = async (req, res) => {
+const submitContact = async (req, res) => {
   try {
     const { name, email, message, subject, phone } = req.body || {}
 
@@ -48,3 +48,5 @@ export const submitContact = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error' })
   }
 }
+
+module.exports = { submitContact }

@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
-import logger from '../utils/logger.js';
-export const connectDB = async () => {
+const mongoose = require('mongoose');
+const logger = require('../utils/logger.js');
+
+const connectDB = async () => {
     try {
         if (!process.env.MONGO_URI) {
             const errorMsg = 'Database Environment variable is not defined';
@@ -63,6 +64,8 @@ export const connectDB = async () => {
         process.exit(1);
     }
 };
+
+module.exports = { connectDB };
 
 // Graceful shutdown handler
 process.on('SIGINT', async () => {

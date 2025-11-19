@@ -1,6 +1,6 @@
-import { ChatSession } from "../models/ChatSession.js";
-import logger from "../utils/logger.js";
-import { generateComplaintReply, isChatConfigured } from "../utils/openaiClient.js";
+const { ChatSession } = require("../models/ChatSession.js");
+const logger = require("../utils/logger.js");
+const { generateComplaintReply, isChatConfigured } = require("../utils/openaiClient.js");
 
 const MAX_STORED_MESSAGES = 40;
 
@@ -24,7 +24,7 @@ const appendAssistantResponse = (session, reply) => {
   session.messages = trimMessages(session.messages);
 };
 
-export const createChatSession = async (req, res) => {
+const createChatSession = async (req, res) => {
   const { topic, message } = req.body;
   try {
     if (!isChatConfigured()) {
@@ -55,7 +55,7 @@ export const createChatSession = async (req, res) => {
   }
 };
 
-export const listChatSessions = async (req, res) => {
+const listChatSessions = async (req, res) => {
   try {
     const sessions = await ChatSession.find({ user: req.user._id })
       .sort({ updatedAt: -1 })
@@ -67,7 +67,7 @@ export const listChatSessions = async (req, res) => {
   }
 };
 
-export const getChatSession = async (req, res) => {
+const getChatSession = async (req, res) => {
   try {
     const session = await ensureSessionOwnership(req.params.id, req.user._id);
     if (!session) {
@@ -80,7 +80,7 @@ export const getChatSession = async (req, res) => {
   }
 };
 
-export const sendChatMessage = async (req, res) => {
+const sendChatMessage = async (req, res) => {
   const { message } = req.body;
   const content = ensureContent(message);
   if (!content) {
@@ -114,7 +114,7 @@ export const sendChatMessage = async (req, res) => {
   }
 };
 
-export const resolveChatSession = async (req, res) => {
+const resolveChatSession = async (req, res) => {
   try {
     const session = await ensureSessionOwnership(req.params.id, req.user._id);
     if (!session) {
@@ -127,4 +127,12 @@ export const resolveChatSession = async (req, res) => {
     logger.error("Failed to resolve chat session", { error: error.message });
     res.status(500).json({ success: false, message: "Unable to resolve chat session" });
   }
+};
+
+module.exports = {
+  createChatSession,
+  listChatSessions,
+  getChatSession,
+  sendChatMessage,
+  resolveChatSession,
 };

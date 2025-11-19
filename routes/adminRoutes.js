@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
     getDashBoardStatistics,
     getAdminUsers,
     updateAdminUser,
@@ -7,9 +7,9 @@ import {
     getUserActivityLogs,
     exportUserData,
     getWebhookEvents
-} from "../controllers/adminController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
-import { body } from "express-validator";
+} = require("../controllers/adminController.js");
+const { protect, admin } = require("../middleware/authMiddleware.js");
+const { body } = require("express-validator");
 
 const router = express.Router();
 
@@ -36,4 +36,4 @@ router.get("/users/:id/activity", protect, admin, getUserActivityLogs);
 router.get("/users/export", protect, admin, exportUserData);
 router.get("/webhook-events", protect, admin, getWebhookEvents);
 
-export default router;
+module.exports = router;

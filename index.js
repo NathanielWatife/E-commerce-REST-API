@@ -1,26 +1,26 @@
-import express from "express";
-import path from "path";
-import dotenv from "dotenv";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import "./utils/ensureDebugCommon.js";
-import { connectDB } from "./config/db.js";
-import authRoutes  from "./routes/authRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import productRoutes from './routes/productRoutes.js';
-import categoryRoutes from './routes/categoryRoutes.js';
-import cartRoutes from "./routes/cartRoutes.js";
-import orderRoutes from "./routes/orderRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
-import notesRoutes from './routes/notesRoutes.js'
-import chatbotRoutes from './routes/chatbotRoutes.js'
-import uploadRoutes from './routes/uploadRoutes.js'
-import contactRoutes from './routes/contactRoutes.js'
-import requestLogger from './middleware/requestLogger.js'
-import logger from "./utils/logger.js";
-import { paystackWebhook, flutterwaveWebhook } from './controllers/paymentController.js'
-import { startPaymentReconciler } from './utils/paymentReconciler.js'
+const express = require("express");
+const path = require("path");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+require("./utils/ensureDebugCommon.js");
+const { connectDB } = require("./config/db.js");
+const authRoutes = require("./routes/authRoutes.js");
+const adminRoutes = require("./routes/adminRoutes.js");
+const userRoutes = require("./routes/userRoutes.js");
+const productRoutes = require('./routes/productRoutes.js');
+const categoryRoutes = require('./routes/categoryRoutes.js');
+const cartRoutes = require("./routes/cartRoutes.js");
+const orderRoutes = require("./routes/orderRoutes.js");
+const paymentRoutes = require("./routes/paymentRoutes.js");
+const notesRoutes = require('./routes/notesRoutes.js');
+const chatbotRoutes = require('./routes/chatbotRoutes.js');
+const uploadRoutes = require('./routes/uploadRoutes.js');
+const contactRoutes = require('./routes/contactRoutes.js');
+const requestLogger = require('./middleware/requestLogger.js');
+const logger = require("./utils/logger.js");
+const { paystackWebhook, flutterwaveWebhook } = require('./controllers/paymentController.js');
+const { startPaymentReconciler } = require('./utils/paymentReconciler.js');
 
 dotenv.config();
 const app = express();

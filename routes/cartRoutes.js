@@ -1,7 +1,7 @@
-import express from "express";
-import { getCart, addToCart, updateCartItem,  removeFromCart, clearCart, syncCart } from "../controllers/cartController.js";
-import { protect } from "../middleware/authMiddleware.js"
-import { body } from "express-validator"
+const express = require("express");
+const { getCart, addToCart, updateCartItem,  removeFromCart, clearCart, syncCart } = require("../controllers/cartController.js");
+const { protect } = require("../middleware/authMiddleware.js")
+const { body } = require("express-validator")
 
 const router = express.Router()
 
@@ -22,4 +22,4 @@ router.route("/sync").post(protect, syncCart)
 
 router.route("/:itemId").put(protect, validateUpdateCartItem, updateCartItem).delete(protect, removeFromCart)
 
-export default router
+module.exports = router

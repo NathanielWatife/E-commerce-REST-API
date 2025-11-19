@@ -1,7 +1,7 @@
-import OpenAI from "openai";
-import logger from "./logger.js";
+const OpenAI = require("openai");
+const logger = require("./logger.js");
 
-export const isChatConfigured = () => !!process.env.OPENAI_API_KEY;
+const isChatConfigured = () => !!process.env.OPENAI_API_KEY;
 
 const ensureApiKey = () => {
   if (!isChatConfigured()) {
@@ -11,7 +11,7 @@ const ensureApiKey = () => {
 
 let openaiInstance;
 
-export const getOpenAIClient = () => {
+const getOpenAIClient = () => {
   if (!openaiInstance) {
     ensureApiKey();
     openaiInstance = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -22,7 +22,7 @@ export const getOpenAIClient = () => {
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const SYSTEM_PROMPT = process.env.CHAT_SYSTEM_PROMPT || `You are Raddazle's helpful customer care assistant. You help customers with order complaints, shipping issues, and product questions. Always respond in a friendly, empathetic tone, collect relevant details, and suggest next steps. Keep replies concise (under 120 words) and offer to escalate to human support when necessary.`;
 
-export const generateComplaintReply = async (conversation, meta = {}) => {
+const generateComplaintReply = async (conversation, meta = {}) => {
   // Guard for missing API key
   if (!isChatConfigured()) {
     const err = new Error("Chat is not configured");
@@ -66,4 +66,10 @@ export const generateComplaintReply = async (conversation, meta = {}) => {
     logger.error("OpenAI error", { error: error.message });
     throw error;
   }
+};
+
+module.exports = {
+  isChatConfigured,
+  getOpenAIClient,
+  generateComplaintReply,
 };

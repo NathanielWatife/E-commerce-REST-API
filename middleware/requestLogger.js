@@ -1,7 +1,7 @@
-import logger from '../utils/logger.js'
+const logger = require('../utils/logger.js')
 
 // simple request logger middleware
-export default function requestLogger(req, res, next) {
+function requestLogger(req, res, next) {
   const start = Date.now()
   res.on('finish', () => {
     const duration = Date.now() - start
@@ -9,3 +9,5 @@ export default function requestLogger(req, res, next) {
   })
   next()
 }
+
+module.exports = requestLogger

@@ -1,6 +1,6 @@
-import logger from "../utils/logger.js";
+const logger = require("../utils/logger.js");
 
-export const getNotes = async (req, res) => {
+const getNotes = async (req, res) => {
     try {
         const notes = [
             { id: 'top', name: 'Top Notes' },
@@ -17,3 +17,5 @@ export const getNotes = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server error', error: process.env.NODE_ENV ? error.message : undefined });
     }
 };
+
+module.exports = { getNotes };

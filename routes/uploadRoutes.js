@@ -1,8 +1,8 @@
-import express from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { protect, admin } from '../middleware/authMiddleware.js';
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { protect, admin } = require('../middleware/authMiddleware.js');
 
 const router = express.Router();
 
@@ -42,4 +42,4 @@ router.post('/', protect, admin, upload.single('image'), (req, res) => {
   return res.status(201).json({ success: true, url: absoluteUrl, path: publicPath, filename: req.file.filename });
 });
 
-export default router;
+module.exports = router;

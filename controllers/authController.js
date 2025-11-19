@@ -1,9 +1,9 @@
-import { User } from "../models/User.js";
-import bcryptjs from "bcryptjs";
-import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-import { validationResult } from "express-validator";
-import { sendEmail, generateVerificationEmail, generatePasswordResetEmail, generateWelcomeEmail, generateLoginNotificationEmail } from "../utils/sendEmail.js";
-import logger from "../utils/logger.js";
+const { User } = require("../models/User.js");
+const bcryptjs = require("bcryptjs");
+const { generateTokenAndSetCookie } = require("../utils/generateTokenAndSetCookie.js");
+const { validationResult } = require("express-validator");
+const { sendEmail, generateVerificationEmail, generatePasswordResetEmail, generateWelcomeEmail, generateLoginNotificationEmail } = require("../utils/sendEmail.js");
+const logger = require("../utils/logger.js");
 
 
 // helper function to generate random token
@@ -26,7 +26,7 @@ const getClientInfo = (req) => {
 
 
 // user signup
-export const signup = async (req, res) => {
+const signup = async (req, res) => {
 	// validate the user inputs
 	const errors = validationResult(req);
 	if(!errors.isEmpty()) {
@@ -101,7 +101,7 @@ export const signup = async (req, res) => {
 
 
 // login 
-export const login = async (req, res) => {
+const login = async (req, res) => {
 	// validate user inputs
 	const errors = validationResult(req)
 	if (!errors.isEmpty()) {
@@ -192,7 +192,7 @@ export const login = async (req, res) => {
   
 
 // verify newly register email
-export const verifyEmail = async (req, res) => {
+const verifyEmail = async (req, res) => {
 	const { email, token } = req.body
   
 	try {
@@ -239,7 +239,7 @@ export const verifyEmail = async (req, res) => {
   
 
 // resend email verification if requested
-  export const resendVerificationEmail = async (req, res) => {
+const resendVerificationEmail = async (req, res) => {
 	const { email } = req.body
   
 	try {
@@ -295,7 +295,7 @@ export const verifyEmail = async (req, res) => {
   }
 
   // logout
-export const logout = async (req, res) => {
+const logout = async (req, res) => {
 	try {
 	  res.clearCookie("token", {
 		  httpOnly: true,
@@ -317,7 +317,7 @@ export const logout = async (req, res) => {
   
 
 // forgot password
-export const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res) => {
 	const { email } = req.body
   
 	try {
@@ -366,7 +366,7 @@ export const forgotPassword = async (req, res) => {
   }
   
 // reset user password
-  export const resetPassword = async (req, res) => {
+const resetPassword = async (req, res) => {
 	const { email, token, newPassword } = req.body
   
 	try {
@@ -406,7 +406,7 @@ export const forgotPassword = async (req, res) => {
 
 
 // get current authenticated user
-export const getCurrentUser = async (req, res) => {
+const getCurrentUser = async (req, res) => {
 	try {
 		const user = await User.findById(req.user?._id).select("-password")
 		if (!user) {
@@ -429,3 +429,14 @@ export const getCurrentUser = async (req, res) => {
 		})
 	}
 }
+
+module.exports = {
+	signup,
+	login,
+	verifyEmail,
+	resendVerificationEmail,
+	logout,
+	forgotPassword,
+	resetPassword,
+	getCurrentUser,
+};

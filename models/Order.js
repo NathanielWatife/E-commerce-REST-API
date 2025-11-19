@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+const mongoose = require("mongoose")
 
 const orderItemSchema = new mongoose.Schema({
     product: {
@@ -88,4 +88,6 @@ const orderSchema = new mongoose.Schema(
 )
 
 
-export const Order = mongoose.model("Order", orderSchema)
+const Order = mongoose.model("Order", orderSchema)
+
+module.exports = { Order }

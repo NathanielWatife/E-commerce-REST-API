@@ -1,13 +1,13 @@
-import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
-import { rateLimitChatbot } from "../middleware/rateLimiter.js";
-import {
+const express = require("express");
+const { protect } = require("../middleware/authMiddleware.js");
+const { rateLimitChatbot } = require("../middleware/rateLimiter.js");
+const {
   createChatSession,
   getChatSession,
   listChatSessions,
   resolveChatSession,
   sendChatMessage,
-} from "../controllers/chatbotController.js";
+} = require("../controllers/chatbotController.js");
 
 const router = express.Router();
 
@@ -24,4 +24,4 @@ router.route("/sessions/:id")
 router.post("/sessions/:id/messages", sendChatMessage);
 router.post("/sessions/:id/resolve", resolveChatSession);
 
-export default router;
+module.exports = router;

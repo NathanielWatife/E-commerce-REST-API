@@ -1,19 +1,19 @@
-import { Order } from "../models/Order.js"
-import { Cart } from "../models/Cart.js"
-import { Product } from "../models/Product.js"
-import { User } from "../models/User.js"
-import { InventoryHistory } from "../models/InventoryHistory.js"
-import { validationResult } from "express-validator"
-import logger from "../utils/logger.js"
-import {
+const { Order } = require("../models/Order.js")
+const { Cart } = require("../models/Cart.js")
+const { Product } = require("../models/Product.js")
+const { User } = require("../models/User.js")
+const { InventoryHistory } = require("../models/InventoryHistory.js")
+const { validationResult } = require("express-validator")
+const logger = require("../utils/logger.js")
+const {
   sendEmail,
   generateOrderConfirmationEmail,
   generateOrderStatusUpdateEmail,
   generatePaymentConfirmationEmail,
-} from "../utils/sendEmail.js"
+} = require("../utils/sendEmail.js")
 
 // @desc    Create new order
-export const createOrder = async (req, res) => {
+const createOrder = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -125,7 +125,7 @@ export const createOrder = async (req, res) => {
 }
 
 // @desc    Get order by ID
-export const getOrderById = async (req, res) => {
+const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("user", "name email").populate({
       path: "orderItems.product",
@@ -165,7 +165,7 @@ export const getOrderById = async (req, res) => {
 }
 
 // @desc    Update order to paid
-export const updateOrderToPaid = async (req, res) => {
+const updateOrderToPaid = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
 
@@ -239,7 +239,7 @@ export const updateOrderToPaid = async (req, res) => {
 }
 
 // @desc    Update order to delivered
-export const updateOrderToDelivered = async (req, res) => {
+const updateOrderToDelivered = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
 
@@ -288,7 +288,7 @@ export const updateOrderToDelivered = async (req, res) => {
 
 // @desc    Get logged in user orders
 
-export const getMyOrders = async (req, res) => {
+const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 })
 
@@ -308,7 +308,7 @@ export const getMyOrders = async (req, res) => {
 
 // @desc    Get all orders
 
-export const getOrders = async (req, res) => {
+const getOrders = async (req, res) => {
   try {
     const pageSize = Number(req.query.pageSize) || 10
     const page = Number(req.query.page) || 1
@@ -339,7 +339,7 @@ export const getOrders = async (req, res) => {
 
 // @desc    Update order status
 
-export const updateOrderStatus = async (req, res) => {
+const updateOrderStatus = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -401,7 +401,7 @@ export const updateOrderStatus = async (req, res) => {
 }
 
 // @desc    Cancel order
-export const cancelOrder = async (req, res) => {
+const cancelOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
 
@@ -489,7 +489,7 @@ export const cancelOrder = async (req, res) => {
 // tracking of order
 
 // @desc    Mark order as shipped and add tracking info
-export const shipOrder = async (req, res) => {
+const shipOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
 
@@ -523,4 +523,16 @@ export const shipOrder = async (req, res) => {
     logger.error("Ship order error:", error)
     return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
+}
+
+module.exports = {
+  createOrder,
+  getOrderById,
+  updateOrderToPaid,
+  updateOrderToDelivered,
+  getMyOrders,
+  getOrders,
+  updateOrderStatus,
+  cancelOrder,
+  shipOrder,
 }

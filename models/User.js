@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import validator from "validator";
+const mongoose = require("mongoose");
+const validator = require("validator");
 
 const addressSchema = new mongoose.Schema({
     street: {
@@ -130,4 +130,6 @@ userSchema.index({ isActive: 1 });
 userSchema.index({ accountStatus: 1 });
 userSchema.index({ createdAt: 1 });
 
-export const User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+
+module.exports = { User };

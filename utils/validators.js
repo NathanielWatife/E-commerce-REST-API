@@ -1,10 +1,10 @@
-import validator from 'validator';
+const validator = require('validator');
 
-export const validateEmail = (email) => {
+const validateEmail = (email) => {
     return validator.isEmail(email);
 };
 
-export const validatePassword = (password) => {
+const validatePassword = (password) => {
     return (
         password.length >= 8 &&
         /[A-Z]/.test(password) &&
@@ -14,6 +14,12 @@ export const validatePassword = (password) => {
     );
 };
 
-export const validateName = (name) => {
+const validateName = (name) => {
     return name.length >= 2 && name.length <= 50;
+};
+
+module.exports = {
+    validateEmail,
+    validatePassword,
+    validateName,
 };

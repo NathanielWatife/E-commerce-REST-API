@@ -1,7 +1,7 @@
-import express from "express";
-import { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct, searchProducts, adjustInventory, getInventoryHistory } from "../controllers/productController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
-import { body } from "express-validator";
+const express = require("express");
+const { getProducts, createProduct, getProductById, updateProduct, deleteProduct, createProductReview, getTopProduct, searchProducts, adjustInventory, getInventoryHistory } = require("../controllers/productController.js");
+const { protect, admin } = require("../middleware/authMiddleware.js");
+const { body } = require("express-validator");
 
 const router = express.Router();
 
@@ -37,9 +37,9 @@ router.route("/search").get(searchProducts);
 router.route("/:id").get(getProductById).put(protect, admin, updateProduct).delete(protect, admin, deleteProduct);
 router.route("/:id/reviews").post(protect, validationProductReview, createProductReview);
 router.route("/:id/inventory/adjust").post(protect, admin, validateAdjustInventory, adjustInventory);
-router.route("/:id/inventory/history").get(protect, admin, getInventoryHistory);
+router.route(":id/inventory/history").get(protect, admin, getInventoryHistory);
 // implement search routes later
 
 
 
-export default router;
+module.exports = router;

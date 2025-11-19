@@ -1,7 +1,7 @@
-import express from "express";
-import { signup, login, logout, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword, getCurrentUser } from "../controllers/authController.js";
-import { validateSignup, validateLogin, validateVerifyEmail, validateResendVerification, validateForgotPassword, validateResetPassword } from "../middleware/validation.js";
-import { protect } from "../middleware/authMiddleware.js";
+const express = require("express");
+const { signup, login, logout, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword, getCurrentUser } = require("../controllers/authController.js");
+const { validateSignup, validateLogin, validateVerifyEmail, validateResendVerification, validateForgotPassword, validateResetPassword } = require("../middleware/validation.js");
+const { protect } = require("../middleware/authMiddleware.js");
 
 const router = express.Router();
 
@@ -21,4 +21,4 @@ router.post("/reset-verification", validateResendVerification, resendVerificatio
 // password reset
 router.post("/forgot-password", validateForgotPassword, forgotPassword);
 router.post("/reset-password", validateResetPassword, resetPassword);
-export default router;
+module.exports = router;

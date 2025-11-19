@@ -1,6 +1,6 @@
-import winston from 'winston'
-import path from 'path'
-import fs from 'fs'
+const winston = require('winston')
+const path = require('path')
+const fs = require('fs')
 
 // ensure logs directory exists
 const logsDir = path.resolve(process.cwd(), 'logs')
@@ -29,4 +29,4 @@ const logger = winston.createLogger({
   exitOnError: false,
 })
 
-export default logger
+module.exports = logger

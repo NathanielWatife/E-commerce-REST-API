@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+const mongoose = require('mongoose')
 
 const webhookEventSchema = new mongoose.Schema(
   {
@@ -21,4 +21,6 @@ const webhookEventSchema = new mongoose.Schema(
 
 webhookEventSchema.index({ provider: 1, reference: 1 })
 
-export const WebhookEvent = mongoose.model('WebhookEvent', webhookEventSchema)
+const WebhookEvent = mongoose.model('WebhookEvent', webhookEventSchema)
+
+module.exports = { WebhookEvent }

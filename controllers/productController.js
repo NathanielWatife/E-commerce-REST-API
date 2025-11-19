@@ -1,14 +1,14 @@
-import { Product } from "../models/Product.js";
-import { InventoryHistory } from "../models/InventoryHistory.js";
-import { Category } from "../models/Category.js";
-import { validationResult } from "express-validator";
-import logger from "../utils/logger.js";
-import fs from 'fs';
-import path from 'path';
+const { Product } = require("../models/Product.js");
+const { InventoryHistory } = require("../models/InventoryHistory.js");
+const { Category } = require("../models/Category.js");
+const { validationResult } = require("express-validator");
+const logger = require("../utils/logger.js");
+const fs = require('fs');
+const path = require('path');
 
 
 // get products
-export const getProducts = async (req, res) => {
+const getProducts = async (req, res) => {
     try {
         const pageSize = Number(req.query.pageSize) || 10
         const page = Number(req.query.page) || 1
@@ -57,7 +57,7 @@ export const getProducts = async (req, res) => {
 
 
 // getting a single product using it Id number
-export const getProductById = async (req, res) => {
+const getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
             .populate("category", "name")
@@ -89,7 +89,7 @@ export const getProductById = async (req, res) => {
 
 
 // create a product
-export const createProduct = async (req, res) => {
+const createProduct = async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         return res.status(400).json({
@@ -138,7 +138,7 @@ export const createProduct = async (req, res) => {
 
 
 // update a an existing product
-export const updateProduct = async (req, res) => {
+const updateProduct = async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         return res.status(400).json({
@@ -240,7 +240,7 @@ export const updateProduct = async (req, res) => {
 
 
 // delete product only admins access
-export const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res) => {
     try {
         const product =  await Product.findById(req.params.id)
 
@@ -286,7 +286,7 @@ export const deleteProduct = async (req, res) => {
 
 
 // create nere product review by admin
-export const createProductReview = async (req, res) => {
+const createProductReview = async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         return res.status(400).json({
@@ -346,7 +346,7 @@ export const createProductReview = async (req, res) => {
 
 
 // get the top rated products
-export const getTopProduct = async (req, res) => {
+const getTopProduct = async (req, res) => {
     try {
         const products = await Product.find({}).sort({ rating: -1 }).limit(5);
 
@@ -365,7 +365,7 @@ export const getTopProduct = async (req, res) => {
 };
 
 // search products (frontend may call /products/search?q=...)
-export const searchProducts = async (req, res) => {
+const searchProducts = async (req, res) => {
     // normalize query param to keyword used by getProducts
     if (req.query.q && !req.query.keyword) {
         req.query.keyword = req.query.q;
@@ -375,7 +375,7 @@ export const searchProducts = async (req, res) => {
 };
 
 // Adjust inventory for a product (admin)
-export const adjustInventory = async (req, res) => {
+const adjustInventory = async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         return res.status(400).json({ success: false, errors: errors.array() })
@@ -406,7 +406,7 @@ export const adjustInventory = async (req, res) => {
 }
 
 // Get inventory history for a product
-export const getInventoryHistory = async (req, res) => {
+const getInventoryHistory = async (req, res) => {
     try {
         const pageSize = Number(req.query.pageSize) || 20
         const page = Number(req.query.page) || 1
@@ -424,4 +424,17 @@ export const getInventoryHistory = async (req, res) => {
         logger.error("Get inventory history error:", error)
         return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
     }
+}
+
+module.exports = {
+    getProducts,
+    getProductById,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    createProductReview,
+    getTopProduct,
+    searchProducts,
+    adjustInventory,
+    getInventoryHistory,
 }

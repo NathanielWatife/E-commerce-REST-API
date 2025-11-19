@@ -1,11 +1,11 @@
-import { Cart } from "../models/Cart.js";
-import { Product } from "../models/Product.js";
-import { validationResult } from "express-validator";
-import logger from "../utils/logger.js";
+const { Cart } = require("../models/Cart.js");
+const { Product } = require("../models/Product.js");
+const { validationResult } = require("express-validator");
+const logger = require("../utils/logger.js");
 
 
 // get product in cart
-export const getCart = async(req, res) => {
+const getCart = async(req, res) => {
 	try {
 		let cart = await Cart.findOne({user: req.user._id}).populate({
 			path: "items.product",
@@ -39,7 +39,7 @@ export const getCart = async(req, res) => {
 
 
 // add product to cart
-export const addToCart = async (req, res) => {
+const addToCart = async (req, res) => {
 	const errors = validationResult(req)
 	if (!errors.isEmpty()) {
 		return res.status(400).json({
@@ -121,7 +121,7 @@ export const addToCart = async (req, res) => {
 
 
 // update cart
-export const updateCartItem = async (req, res) => {
+const updateCartItem = async (req, res) => {
 	const errors = validationResult(req)
 	if (!errors.isEmpty()) {
 		return res.status(400).json({
@@ -204,7 +204,7 @@ export const updateCartItem = async (req, res) => {
 
 
 // remove item from cart 
-export const removeFromCart = async (req, res) => {
+const removeFromCart = async (req, res) => {
 	try {
 		const { itemId } = req.params;
 
@@ -253,7 +253,7 @@ export const removeFromCart = async (req, res) => {
 
 
 // clear user cart
-export const clearCart = async (req, res) => {
+const clearCart = async (req, res) => {
 	try {
 		// get user cart
 		const cart = await Cart.findOne({ user: req.user._id })
@@ -286,7 +286,7 @@ export const clearCart = async (req, res) => {
 };
 
 // sync cart from client (merge client items into server cart)
-export const syncCart = async (req, res) => {
+const syncCart = async (req, res) => {
 	try {
 		const { items } = req.body;
 		if (!Array.isArray(items)) {
@@ -329,4 +329,13 @@ export const syncCart = async (req, res) => {
 		logger.error('Sync cart error:', error);
 		return res.status(500).json({ success: false, message: 'Server error', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
 	}
+};
+
+module.exports = {
+	getCart,
+	addToCart,
+	updateCartItem,
+	removeFromCart,
+	clearCart,
+	syncCart,
 };

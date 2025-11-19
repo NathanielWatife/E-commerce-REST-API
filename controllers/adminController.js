@@ -1,12 +1,12 @@
-import { User } from "../models/User.js";
-import { Order } from "../models/Order.js";
-import { Product } from "../models/Product.js";
-import { validationResult } from "express-validator";
-import logger from "../utils/logger.js";
-import { WebhookEvent } from "../models/WebhookEvent.js";
+const { User } = require("../models/User.js");
+const { Order } = require("../models/Order.js");
+const { Product } = require("../models/Product.js");
+const { validationResult } = require("express-validator");
+const logger = require("../utils/logger.js");
+const { WebhookEvent } = require("../models/WebhookEvent.js");
 
 // get admin dashboarb statistics admin/private
-export const getDashBoardStatistics = async (req, res) => {
+const getDashBoardStatistics = async (req, res) => {
     try {
         const totalUsers = await User.countDocuments();
         const totalAdmins = await User.countDocuments({ role: {
@@ -80,7 +80,7 @@ export const getDashBoardStatistics = async (req, res) => {
 
 
 // get users with advanced filtering and sorting private(admin)
-export const getAdminUsers = async (req, res) => {
+const getAdminUsers = async (req, res) => {
     try {
         const pageSize = Number(req.query.pageSize) || 20;
         const page = Number(req.query.page) || 1;
@@ -142,7 +142,7 @@ export const getAdminUsers = async (req, res) => {
 };
 
 // update user role private routes(admin)
-export const updateAdminUser = async (req, res) => {
+const updateAdminUser = async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({
@@ -216,7 +216,7 @@ export const updateAdminUser = async (req, res) => {
 
 
 // bulk user actions private(admin)
-export const bulkUserActions = async (req, res) => {
+const bulkUserActions = async (req, res) => {
     const { action, userIds } = req.body;
 
     if (!action || !userIds || !Array.isArray(userIds) || userIds.length === 0) {
@@ -296,7 +296,7 @@ export const bulkUserActions = async (req, res) => {
 
 
 // user activity logs private(admin)
-export const getUserActivityLogs = async (req, res) => {
+const getUserActivityLogs = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select("loginHistory lastLogin");
 
@@ -331,7 +331,7 @@ export const getUserActivityLogs = async (req, res) => {
 
 
 // export user data private(admin)
-export const exportUserData = async (req, res) => {
+const exportUserData = async (req, res) => {
     try {
         const users = await User.find({})
             .select("firstName lastName email phoneNumber role isVerified isActive accountStatus lastLogin createdAt")
@@ -374,7 +374,7 @@ export const exportUserData = async (req, res) => {
 };
 
 // get webhook events (admin) with filters
-export const getWebhookEvents = async (req, res) => {
+const getWebhookEvents = async (req, res) => {
     try {
         const pageSize = Math.min(Number(req.query.pageSize) || 20, 100);
         const page = Math.max(Number(req.query.page) || 1, 1);
@@ -432,3 +432,13 @@ export const getWebhookEvents = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server error', error: process.env.NODE_ENV ? error.message : undefined });
     }
 }
+
+module.exports = {
+    getDashBoardStatistics,
+    getAdminUsers,
+    updateAdminUser,
+    bulkUserActions,
+    getUserActivityLogs,
+    exportUserData,
+    getWebhookEvents,
+};

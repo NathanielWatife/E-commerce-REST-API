@@ -1,7 +1,7 @@
-import jwt from "jsonwebtoken";
-import logger from "./logger.js";
+const jwt = require("jsonwebtoken");
+const logger = require("./logger.js");
 
-export const generateTokenAndSetCookie = (res, userId) => {
+const generateTokenAndSetCookie = (res, userId) => {
     if (!process.env.JWT_SECRET) {
         logger.error("JWT_SEC environment variable is not set!")
         throw new Error("JWT secret is not configured")
@@ -23,3 +23,5 @@ export const generateTokenAndSetCookie = (res, userId) => {
     });
     return token;
 };
+
+module.exports = { generateTokenAndSetCookie };

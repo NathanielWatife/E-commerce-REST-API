@@ -1,11 +1,11 @@
-import { Category } from "../models/Category.js"
-import { validationResult } from "express-validator"
-import logger from "../utils/logger.js"
+const { Category } = require("../models/Category.js")
+const { validationResult } = require("express-validator")
+const logger = require("../utils/logger.js")
 
 // @desc    Get all categories
 // @route   GET /api/categories
 // @access  Public
-export const getCategories = async (req, res) => {
+const getCategories = async (req, res) => {
   try {
     const search = (req.query.search || '').trim();
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -33,7 +33,7 @@ export const getCategories = async (req, res) => {
 
     if (includeCounts) {
       // Compute product counts per category
-      const { Product } = await import('../models/Product.js');
+      const { Product } = require('../models/Product.js');
       const agg = await Product.aggregate([
         { $match: { category: { $ne: null } } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
@@ -65,7 +65,7 @@ export const getCategories = async (req, res) => {
 // @desc    Get single category
 // @route   GET /api/categories/:id
 // @access  Public
-export const getCategoryById = async (req, res) => {
+const getCategoryById = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id)
 
@@ -93,7 +93,7 @@ export const getCategoryById = async (req, res) => {
 // @desc    Create a category
 // @route   POST /api/categories
 // @access  Private/Admin
-export const createCategory = async (req, res) => {
+const createCategory = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -139,7 +139,7 @@ export const createCategory = async (req, res) => {
 // @desc    Update a category
 // @route   PUT /api/categories/:id
 // @access  Private/Admin
-export const updateCategory = async (req, res) => {
+const updateCategory = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -195,7 +195,7 @@ export const updateCategory = async (req, res) => {
 // @desc    Delete a category
 // @route   DELETE /api/categories/:id
 // @access  Private/Admin
-export const deleteCategory = async (req, res) => {
+const deleteCategory = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id)
 
@@ -220,4 +220,12 @@ export const deleteCategory = async (req, res) => {
       error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
+}
+
+module.exports = {
+  getCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }

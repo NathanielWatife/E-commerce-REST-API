@@ -1,8 +1,8 @@
-import jwt from "jsonwebtoken"
-import { User } from "../models/User.js"
-import logger from "../utils/logger.js"
+const jwt = require("jsonwebtoken")
+const { User } = require("../models/User.js")
+const logger = require("../utils/logger.js")
 
-export const protect = async (req, res, next) => {
+const protect = async (req, res, next) => {
   let token
 
   // Check if token exists in cookies
@@ -53,7 +53,7 @@ export const protect = async (req, res, next) => {
 }
 
 // authMiddleware.js
-export const admin = (req, res, next) => {
+const admin = (req, res, next) => {
   if (req.user && (req.user.role === "admin" || req.user.role === "super-admin")) {
     next();
   } else {
@@ -65,7 +65,7 @@ export const admin = (req, res, next) => {
 };
 
 // Add super-admin middleware
-export const superAdmin = (req, res, next) => {
+const superAdmin = (req, res, next) => {
   if (req.user && req.user.role === "super-admin") {
     next();
   } else {
@@ -75,3 +75,9 @@ export const superAdmin = (req, res, next) => {
     });
   }
 };
+
+module.exports = {
+  protect,
+  admin,
+  superAdmin,
+}

@@ -1,11 +1,11 @@
-import { Payment } from "../models/Payment.js"
-import { Order } from "../models/Order.js"
-import { User } from "../models/User.js"
-import { validationResult } from "express-validator"
-import { sendEmail, generatePaymentConfirmationEmail } from "../utils/sendEmail.js"
-import { WebhookEvent } from "../models/WebhookEvent.js"
-import logger from "../utils/logger.js"
-import crypto from "crypto"
+const { Payment } = require("../models/Payment.js")
+const { Order } = require("../models/Order.js")
+const { User } = require("../models/User.js")
+const { validationResult } = require("express-validator")
+const { sendEmail, generatePaymentConfirmationEmail } = require("../utils/sendEmail.js")
+const { WebhookEvent } = require("../models/WebhookEvent.js")
+const logger = require("../utils/logger.js")
+const crypto = require("crypto")
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || ""
 const PAYSTACK_BASE = "https://api.paystack.co"
@@ -52,7 +52,7 @@ async function flwFetch(path, options = {}) {
 // @desc    Process payment
 // @route   POST /api/payments
 // @access  Private
-export const processPayment = async (req, res) => {
+const processPayment = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -144,7 +144,7 @@ export const processPayment = async (req, res) => {
 // @desc    Get payment by ID
 // @route   GET /api/payments/:id
 // @access  Private
-export const getPaymentById = async (req, res) => {
+const getPaymentById = async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id)
 
@@ -183,7 +183,7 @@ export const getPaymentById = async (req, res) => {
 // @desc    Get user payments
 // @route   GET /api/payments/mypayments
 // @access  Private
-export const getMyPayments = async (req, res) => {
+const getMyPayments = async (req, res) => {
   try {
     const payments = await Payment.find({ user: req.user._id }).sort({ createdAt: -1 })
 
@@ -204,7 +204,7 @@ export const getMyPayments = async (req, res) => {
 // @desc    Get all payments (admin only)
 // @route   GET /api/payments
 // @access  Private/Admin
-export const getAllPayments = async (req, res) => {
+const getAllPayments = async (req, res) => {
   try {
     const pageSize = Number(req.query.pageSize) || 10
     const page = Number(req.query.page) || 1
@@ -237,7 +237,7 @@ export const getAllPayments = async (req, res) => {
 // @desc    Update payment status (admin only)
 // @route   PUT /api/payments/:id
 // @access  Private/Admin
-export const updatePaymentStatus = async (req, res) => {
+const updatePaymentStatus = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -304,7 +304,7 @@ export const updatePaymentStatus = async (req, res) => {
 // @desc    Init Paystack transaction for an order
 // @route   POST /api/payments/paystack/init
 // @access  Private
-export const initPaystackPayment = async (req, res) => {
+const initPaystackPayment = async (req, res) => {
   try {
     if (!PAYSTACK_SECRET_KEY) {
       return res.status(503).json({ success: false, message: "Paystack is not configured" })
@@ -362,7 +362,7 @@ export const initPaystackPayment = async (req, res) => {
 // @desc    Verify Paystack transaction
 // @route   POST /api/payments/paystack/verify
 // @access  Private
-export const verifyPaystackPayment = async (req, res) => {
+const verifyPaystackPayment = async (req, res) => {
   try {
     if (!PAYSTACK_SECRET_KEY) {
       return res.status(503).json({ success: false, message: "Paystack is not configured" })
@@ -421,7 +421,7 @@ export const verifyPaystackPayment = async (req, res) => {
 // @desc    Get bank transfer details
 // @route   GET /api/payments/bank-info
 // @access  Public
-export const getBankInfo = async (req, res) => {
+const getBankInfo = async (req, res) => {
   return res.status(200).json({
     success: true,
     bank: {
@@ -437,7 +437,7 @@ export const getBankInfo = async (req, res) => {
 // @desc    Submit bank transfer proof/reference
 // @route   POST /api/payments/bank-transfer/submit
 // @access  Private
-export const submitBankTransfer = async (req, res) => {
+const submitBankTransfer = async (req, res) => {
   try {
     const { orderId, reference, proofImageUrl } = req.body
     if (!orderId || !reference) return res.status(400).json({ success: false, message: 'orderId and reference are required' })
@@ -472,7 +472,7 @@ export const submitBankTransfer = async (req, res) => {
 // @desc    Init Flutterwave transaction
 // @route   POST /api/payments/flutterwave/init
 // @access  Private
-export const initFlutterwavePayment = async (req, res) => {
+const initFlutterwavePayment = async (req, res) => {
   try {
     if (!FLW_SECRET_KEY) {
       return res.status(503).json({ success: false, message: "Flutterwave is not configured" })
@@ -515,7 +515,7 @@ export const initFlutterwavePayment = async (req, res) => {
 // @desc    Verify Flutterwave transaction
 // @route   POST /api/payments/flutterwave/verify
 // @access  Private
-export const verifyFlutterwavePayment = async (req, res) => {
+const verifyFlutterwavePayment = async (req, res) => {
   try {
     if (!FLW_SECRET_KEY) {
       return res.status(503).json({ success: false, message: "Flutterwave is not configured" })
@@ -568,7 +568,7 @@ export const verifyFlutterwavePayment = async (req, res) => {
 // @desc    Paystack webhook receiver (raw body required)
 // @route   POST /api/payments/paystack/webhook
 // @access  Public (signature verified)
-export const paystackWebhook = async (req, res) => {
+const paystackWebhook = async (req, res) => {
   try {
     if (!PAYSTACK_SECRET_KEY) return res.sendStatus(204)
     const signature = req.headers['x-paystack-signature']
@@ -646,7 +646,7 @@ export const paystackWebhook = async (req, res) => {
 // @desc    Flutterwave webhook receiver (raw body required)
 // @route   POST /api/payments/flutterwave/webhook
 // @access  Public (hash verified)
-export const flutterwaveWebhook = async (req, res) => {
+const flutterwaveWebhook = async (req, res) => {
   try {
     if (!FLW_SECRET_HASH) return res.sendStatus(204)
     const headerHash = req.headers['verif-hash'] || req.headers['verif_hash']
@@ -723,7 +723,7 @@ export const flutterwaveWebhook = async (req, res) => {
 // @desc    Refund a completed payment (admin)
 // @route   POST /api/payments/:id/refund
 // @access  Private/Admin
-export const refundPayment = async (req, res) => {
+const refundPayment = async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id)
     if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' })
@@ -763,4 +763,21 @@ export const refundPayment = async (req, res) => {
     logger.error('Refund payment error:', err)
     return res.status(500).json({ success: false, message: err.message || 'Server error' })
   }
+}
+
+module.exports = {
+  processPayment,
+  getPaymentById,
+  getMyPayments,
+  getAllPayments,
+  updatePaymentStatus,
+  initPaystackPayment,
+  verifyPaystackPayment,
+  getBankInfo,
+  submitBankTransfer,
+  initFlutterwavePayment,
+  verifyFlutterwavePayment,
+  paystackWebhook,
+  flutterwaveWebhook,
+  refundPayment,
 }

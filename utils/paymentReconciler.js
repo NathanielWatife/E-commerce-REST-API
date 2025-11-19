@@ -1,8 +1,8 @@
-import logger from '../utils/logger.js';
-import { Payment } from '../models/Payment.js';
-import { Order } from '../models/Order.js';
-import { User } from '../models/User.js';
-import { sendEmail, generatePaymentConfirmationEmail } from '../utils/sendEmail.js';
+const logger = require('../utils/logger.js');
+const { Payment } = require('../models/Payment.js');
+const { Order } = require('../models/Order.js');
+const { User } = require('../models/User.js');
+const { sendEmail, generatePaymentConfirmationEmail } = require('../utils/sendEmail.js');
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || '';
 const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY || '';
@@ -112,7 +112,7 @@ async function reconcileOne(payment) {
   }
 }
 
-export function startPaymentReconciler() {
+function startPaymentReconciler() {
   const intervalMs = Number(process.env.PAYMENT_RECON_INTERVAL_MS || 5 * 60 * 1000); // 5m
   const minAgeMs = Number(process.env.PAYMENT_RECON_MIN_AGE_MS || 2 * 60 * 1000); // 2m
   const failAfterMs = Number(process.env.PAYMENT_RECON_FAIL_AFTER_MS || 24 * 60 * 60 * 1000); // 24h
@@ -140,3 +140,5 @@ export function startPaymentReconciler() {
   setTimeout(tick, 10 * 1000);
   logger.info(`Payment reconciler started: every ${intervalMs}ms`);
 }
+
+module.exports = { startPaymentReconciler };

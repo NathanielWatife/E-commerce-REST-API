@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+const mongoose = require("mongoose")
 
 const inventoryHistorySchema = new mongoose.Schema(
   {
@@ -25,4 +25,6 @@ const inventoryHistorySchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-export const InventoryHistory = mongoose.model("InventoryHistory", inventoryHistorySchema)
+const InventoryHistory = mongoose.model("InventoryHistory", inventoryHistorySchema)
+
+module.exports = { InventoryHistory }

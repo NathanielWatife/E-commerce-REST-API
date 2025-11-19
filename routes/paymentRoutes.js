@@ -1,5 +1,5 @@
-import express from "express"
-import {
+const express = require("express")
+const {
   processPayment,
   getPaymentById,
   getMyPayments,
@@ -12,9 +12,9 @@ import {
   initFlutterwavePayment,
   verifyFlutterwavePayment,
   refundPayment,
-} from "../controllers/paymentController.js"
-import { protect, admin } from "../middleware/authMiddleware.js"
-import { body } from "express-validator"
+} = require("../controllers/paymentController.js")
+const { protect, admin } = require("../middleware/authMiddleware.js")
+const { body } = require("express-validator")
 
 const router = express.Router()
 
@@ -59,4 +59,4 @@ router.post("/flutterwave/verify", protect, verifyFlutterwavePayment)
 // Refund (admin)
 router.post('/:id/refund', protect, admin, refundPayment)
 
-export default router
+module.exports = router

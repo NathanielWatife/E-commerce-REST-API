@@ -1,12 +1,12 @@
-import { User } from "../models/User.js"
-import bcryptjs from "bcryptjs"
-import { validationResult } from "express-validator"
-import logger from "../utils/logger.js"
+const { User } = require("../models/User.js")
+const bcryptjs = require("bcryptjs")
+const { validationResult } = require("express-validator")
+const logger = require("../utils/logger.js")
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
-export const getUserProfile = async (req, res) => {
+const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
 
@@ -45,7 +45,7 @@ export const getUserProfile = async (req, res) => {
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private
-export const updateUserProfile = async (req, res) => {
+const updateUserProfile = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -101,7 +101,7 @@ export const updateUserProfile = async (req, res) => {
 // @desc    Update user avatar
 // @route   PUT /api/users/profile/avatar
 // @access  Private
-export const updateUserAvatar = async (req, res) => {
+const updateUserAvatar = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -144,7 +144,7 @@ export const updateUserAvatar = async (req, res) => {
 // @desc    Add billing address
 // @route   POST /api/users/profile/billing-address
 // @access  Private
-export const addBillingAddress = async (req, res) => {
+const addBillingAddress = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -209,7 +209,7 @@ export const addBillingAddress = async (req, res) => {
 // @desc    Update billing address
 // @route   PUT /api/users/profile/billing-address/:addressId
 // @access  Private
-export const updateBillingAddress = async (req, res) => {
+const updateBillingAddress = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -274,7 +274,7 @@ export const updateBillingAddress = async (req, res) => {
 // @desc    Delete billing address
 // @route   DELETE /api/users/profile/billing-address/:addressId
 // @access  Private
-export const deleteBillingAddress = async (req, res) => {
+const deleteBillingAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
 
@@ -327,7 +327,7 @@ export const deleteBillingAddress = async (req, res) => {
 // @desc    Add shipping address
 // @route   POST /api/users/profile/shipping-address
 // @access  Private
-export const addShippingAddress = async (req, res) => {
+const addShippingAddress = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -392,7 +392,7 @@ export const addShippingAddress = async (req, res) => {
 // @desc    Update shipping address
 // @route   PUT /api/users/profile/shipping-address/:addressId
 // @access  Private
-export const updateShippingAddress = async (req, res) => {
+const updateShippingAddress = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -457,7 +457,7 @@ export const updateShippingAddress = async (req, res) => {
 // @desc    Delete shipping address
 // @route   DELETE /api/users/profile/shipping-address/:addressId
 // @access  Private
-export const deleteShippingAddress = async (req, res) => {
+const deleteShippingAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
 
@@ -510,7 +510,7 @@ export const deleteShippingAddress = async (req, res) => {
 // @desc    Get all users (admin only)
 // @route   GET /api/users
 // @access  Private/Admin
-export const getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   try {
     const pageSize = Number(req.query.pageSize) || 10
     const page = Number(req.query.page) || 1
@@ -541,7 +541,7 @@ export const getUsers = async (req, res) => {
 
 
 // get user by ID
-export const getUserById = async (req, res) => {
+const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password")
 
@@ -567,7 +567,7 @@ export const getUserById = async (req, res) => {
 }
 
 // update user
-export const updateUser = async (req, res) => {
+const updateUser = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -617,7 +617,7 @@ export const updateUser = async (req, res) => {
 }
 
 // delete user account
-export const deleteUser = async (req, res) => {
+const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
 
@@ -650,4 +650,20 @@ export const deleteUser = async (req, res) => {
       error: process.env.NODE_ENV ? error.message : undefined,
     })
   }
+}
+
+module.exports = {
+  getUserProfile,
+  updateUserProfile,
+  updateUserAvatar,
+  addBillingAddress,
+  updateBillingAddress,
+  deleteBillingAddress,
+  addShippingAddress,
+  updateShippingAddress,
+  deleteShippingAddress,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
 }

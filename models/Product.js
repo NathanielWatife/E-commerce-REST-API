@@ -1,4 +1,4 @@
-import mongoose, { Types } from "mongoose";
+const mongoose = require("mongoose");
 
 // model for product reviews
 const reviewSchema = new mongoose.Schema({
@@ -81,4 +81,6 @@ const productSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
-export const Product = mongoose.model("Product", productSchema);
+const Product = mongoose.model("Product", productSchema);
+
+module.exports = { Product };

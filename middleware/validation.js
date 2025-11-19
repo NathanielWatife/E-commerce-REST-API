@@ -1,6 +1,6 @@
-import { body } from "express-validator"
+const { body } = require("express-validator")
 
-export const validateSignup = [
+const validateSignup = [
   body("name")
     .notEmpty()
     .withMessage("Name is required")
@@ -30,27 +30,27 @@ export const validateSignup = [
     .withMessage("Password must contain at least one special character"),
 ]
 
-export const validateLogin = [
+const validateLogin = [
   body("email").notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
 
   body("password").notEmpty().withMessage("Password is required"),
 ]
 
-export const validateVerifyEmail = [
+const validateVerifyEmail = [
   body("email").notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
 
   body("token").notEmpty().withMessage("Verification token is required"),
 ]
 
-export const validateResendVerification = [
+const validateResendVerification = [
   body("email").notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
 ]
 
-export const validateForgotPassword = [
+const validateForgotPassword = [
   body("email").notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
 ]
 
-export const validateResetPassword = [
+const validateResetPassword = [
   body("email").notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
 
   body("token").notEmpty().withMessage("Reset token is required"),
@@ -72,7 +72,7 @@ export const validateResetPassword = [
 
 
 
-export const validateBulkActions = [
+const validateBulkActions = [
   body("action")
     .isIn(["activate", "deactivate", "suspend", "delete"])
     .withMessage("Invalid action"),
@@ -90,7 +90,7 @@ export const validateBulkActions = [
     .withMessage("Invalid user ID"),
 ];
 
-export const validateAdminUserUpdate = [
+const validateAdminUserUpdate = [
   body("role")
     .optional()
     .isIn(["user", "admin", "super-admin"])
@@ -108,3 +108,14 @@ export const validateAdminUserUpdate = [
     .isBoolean()
     .withMessage("isVerified must be a boolean"),
 ];
+
+module.exports = {
+  validateSignup,
+  validateLogin,
+  validateVerifyEmail,
+  validateResendVerification,
+  validateForgotPassword,
+  validateResetPassword,
+  validateBulkActions,
+  validateAdminUserUpdate,
+}

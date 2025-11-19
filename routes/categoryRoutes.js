@@ -1,7 +1,7 @@
-import express from "express";
-import { getCategories, getCategoryById, updateCategory, createCategory, deleteCategory } from "../controllers/categoryController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
-import { body } from "express-validator";
+const express = require("express");
+const { getCategories, getCategoryById, updateCategory, createCategory, deleteCategory } = require("../controllers/categoryController.js");
+const { protect, admin } = require("../middleware/authMiddleware.js");
+const { body } = require("express-validator");
 
 
 const router = express.Router();
@@ -18,4 +18,4 @@ router.route("/").get(getCategories).post(protect, admin, validationCategoryCrea
 router.route("/:id").get(getCategoryById).put(protect, admin, updateCategory).delete(protect, admin, deleteCategory)
 
 
-export default router
+module.exports = router
