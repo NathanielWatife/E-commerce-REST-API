@@ -1,9 +1,9 @@
 // Seed script for sample fragrance products
-import mongoose from "mongoose";
-import { Product } from "./models/Product.js";
-import { Category } from "./models/Category.js";
-import { User } from "./models/User.js";
-import dotenv from "dotenv";
+const mongoose = require("mongoose");
+const { Product } = require("./models/Product.js");
+const { Category } = require("./models/Category.js");
+const { User } = require("./models/User.js");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -135,14 +135,12 @@ const seedProducts = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log("MongoDB connected for seeding products...");
 
-        // Get all categories
         const categories = await Category.find({});
         if (categories.length === 0) {
             console.log("No categories found. Please run seedCategories.js first!");
             process.exit(1);
         }
 
-        // Get admin user or create one
         let adminUser = await User.findOne({ role: "admin" });
         if (!adminUser) {
             console.log("No admin user found. Creating default admin...");
@@ -154,17 +152,14 @@ const seedProducts = async () => {
                 isVerified: true
             });
         }
-
-        // Clear existing products
         await Product.deleteMany({});
         console.log("Existing products cleared");
 
-        // Assign categories to products and create them
         const productsToCreate = sampleProducts.map((product, index) => ({
             ...product,
             user: adminUser._id,
             category: categories[index % categories.length]._id,
-            image: `/img/fragrance-${(index % 12) + 1}.jpg` // We'll use generic images
+            image: `/img/fragrance-${(index % 12) + 1}.jpg`
         }));
 
         const products = await Product.insertMany(productsToCreate);

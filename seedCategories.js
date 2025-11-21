@@ -1,7 +1,6 @@
-// Seed script for fragrance categories
-import mongoose from "mongoose";
-import { Category } from "./models/Category.js";
-import dotenv from "dotenv";
+const mongoose = require("mongoose");
+const { Category } = require("./models/Category.js");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -53,11 +52,9 @@ const seedCategories = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log("MongoDB connected for seeding...");
 
-        // Clear existing categories
         await Category.deleteMany({});
         console.log("Existing categories cleared");
 
-        // Insert new categories
         const categories = await Category.insertMany(fragranceCategories);
         console.log(`${categories.length} fragrance categories created successfully!`);
         

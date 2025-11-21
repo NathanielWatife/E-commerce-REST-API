@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import dotenv from 'dotenv'
-import mongoose from 'mongoose'
-import { connectDB } from '../config/db.js'
-import { Order } from '../models/Order.js'
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const { connectDB } = require('../config/db.js');
+const { Order } = require('../models/Order.js');
 
-dotenv.config()
+dotenv.config();
 
 const run = async () => {
   await connectDB()

@@ -37,8 +37,7 @@ const connectDB = async () => {
             port: connection.connection.port,
             readyState: connection.connection.readyState
         });
-
-        // Connection event listeners for monitoring
+        
         mongoose.connection.on('connected', () => {
             logger.debug('Database Connected Successfully');
         });
@@ -59,18 +58,16 @@ const connectDB = async () => {
             environment: process.env.NODE_ENV,
             retryAttempt: false
         });
-        
-        // Graceful shutdown
         process.exit(1);
     }
 };
 
-module.exports = { connectDB };
 
-// Graceful shutdown handler
 process.on('SIGINT', async () => {
     logger.info('Received SIGINT. Gracefully shutting down database connection...');
     await mongoose.connection.close();
     logger.info('Database connection closed.');
     process.exit(0);
 });
+
+module.exports = { connectDB };

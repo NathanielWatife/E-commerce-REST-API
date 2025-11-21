@@ -307,7 +307,7 @@ const syncCart = async (req, res) => {
 
 			const existingIndex = cart.items.findIndex(i => i.product.toString() === productId.toString());
 			const product = await Product.findById(productId);
-			if (!product) continue; // skip invalid products
+			if (!product) continue;
 
 			if (existingIndex > -1) {
 				// replace quantity with max of both (or sum, choose merge strategy; here we take max)

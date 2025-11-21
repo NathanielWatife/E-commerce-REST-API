@@ -25,14 +25,13 @@ const { startPaymentReconciler } = require('./utils/paymentReconciler.js');
 dotenv.config();
 const app = express();
 
-// Webhooks MUST be mounted with raw body BEFORE json middleware
 app.post('/api/payments/paystack/webhook', express.raw({ type: 'application/json' }), paystackWebhook)
 app.post('/api/payments/flutterwave/webhook', express.raw({ type: 'application/json' }), flutterwaveWebhook)
 
-// middleware
+
 app.use(express.json());
 app.use(cookieParser());
-// request logger
+
 app.use(requestLogger);
 app.use(
   cors({
@@ -43,7 +42,7 @@ app.use(
   })
 )
 
-//  routes
+
 app.use("/api/auth", authRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/users", userRoutes)
@@ -57,15 +56,12 @@ app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/contact', contactRoutes)
 
-// simple health check
+
 app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))
 
-// Serve uploaded images statically
 const __uploads = path.join(process.cwd(), 'uploads')
 app.use('/uploads', express.static(__uploads))
 
-
-// error handling middleware
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode
   res.status(statusCode)
@@ -76,8 +72,6 @@ app.use((err, req, res, next) => {
   })
 })
 
-
-// not found error middleware handling
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -87,11 +81,9 @@ app.use((req, res, next) => {
 
 
 
-// port 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
   connectDB();
   logger.info(`Backend Server running on ${PORT}`);
-  // Start background reconciler
   try { startPaymentReconciler(); } catch (e) { logger.warn('Reconciler failed to start', e); }
 });

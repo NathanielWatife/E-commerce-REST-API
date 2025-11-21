@@ -5,7 +5,6 @@ const { validationResult } = require("express-validator");
 const logger = require("../utils/logger.js");
 const { WebhookEvent } = require("../models/WebhookEvent.js");
 
-// get admin dashboarb statistics admin/private
 const getDashBoardStatistics = async (req, res) => {
     try {
         const totalUsers = await User.countDocuments();
@@ -79,7 +78,6 @@ const getDashBoardStatistics = async (req, res) => {
 };
 
 
-// get users with advanced filtering and sorting private(admin)
 const getAdminUsers = async (req, res) => {
     try {
         const pageSize = Number(req.query.pageSize) || 20;
@@ -141,7 +139,6 @@ const getAdminUsers = async (req, res) => {
     }
 };
 
-// update user role private routes(admin)
 const updateAdminUser = async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
@@ -160,7 +157,6 @@ const updateAdminUser = async (req, res) => {
             });
         }
 
-        // prevent modification of super-admin unless current is actually superadmin
         if(user.role === "super-admin" && req.user.role !== "super-admin") {
             return res.status(403).json({
                 success: false,
@@ -174,12 +170,10 @@ const updateAdminUser = async (req, res) => {
         }
         if (accountStatus && ["active", "suspended", "deactivated"].includes(accountStatus)) {
             user.accountStatus = accountStatus;
-            // keep isActive boolean in sync
             user.isActive = accountStatus === "active";
         }
         if (isActive !== undefined) {
             user.isActive = Boolean(isActive);
-            // auto derive accountStatus if not explicitly provided
             if (!accountStatus) {
                 user.accountStatus = user.isActive ? "active" : user.accountStatus === "suspended" ? "suspended" : "deactivated";
             }
@@ -215,7 +209,6 @@ const updateAdminUser = async (req, res) => {
 };
 
 
-// bulk user actions private(admin)
 const bulkUserActions = async (req, res) => {
     const { action, userIds } = req.body;
 
@@ -244,7 +237,6 @@ const bulkUserActions = async (req, res) => {
                 message = "User suspended successfully";
                 break;
             case "delete":
-                // prevent deletion of super-admin accounts
                 const superAdmins = await User.countDocuments({
                     _id: { $in: userIds },
                     role: "super-admin"
@@ -274,7 +266,6 @@ const bulkUserActions = async (req, res) => {
         const result = await User.updateMany(
             {
                 _id: { $in: userIds },
-                // prevent modification of super-admin unless current is actually superadmin
                 ...(action !== "delete" ? { role: { $ne: "super-admin" } } : {})
             },
             update
@@ -295,7 +286,6 @@ const bulkUserActions = async (req, res) => {
 };
 
 
-// user activity logs private(admin)
 const getUserActivityLogs = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select("loginHistory lastLogin");
@@ -330,14 +320,12 @@ const getUserActivityLogs = async (req, res) => {
 };
 
 
-// export user data private(admin)
 const exportUserData = async (req, res) => {
     try {
         const users = await User.find({})
             .select("firstName lastName email phoneNumber role isVerified isActive accountStatus lastLogin createdAt")
             .sort({ createdAt: -1 });
 
-        // convert exports to csv format
         const csvData = users.map(u => ({
             Name: `${u.firstName} ${u.lastName}`,
             Email: u.email,
@@ -356,7 +344,6 @@ const exportUserData = async (req, res) => {
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename="user_data.csv"');
 
-        // csv conversion
         const csv = [
             Object.keys(csvData[0]).join(','),
             ...csvData.map(row => Object.values(row).join(','))
@@ -373,7 +360,6 @@ const exportUserData = async (req, res) => {
     }
 };
 
-// get webhook events (admin) with filters
 const getWebhookEvents = async (req, res) => {
     try {
         const pageSize = Math.min(Number(req.query.pageSize) || 20, 100);
@@ -396,13 +382,11 @@ const getWebhookEvents = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(pageSize)
             .skip(pageSize * (page - 1))
-            .select('-raw'); // do not expose raw body by default
-
-        // Mask sensitive payload fields lightly
+            .select('-raw'); 
         const masked = events.map(e => {
             const payload = e.payload || {};
             const safePayload = { ...payload };
-            // redact email/account numbers if present
+
             try {
                 if (safePayload.data?.customer?.email) {
                     const em = safePayload.data.customer.email;

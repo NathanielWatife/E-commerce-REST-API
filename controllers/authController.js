@@ -154,12 +154,10 @@ const login = async (req, res) => {
 			time: new Date()
 		});
 
-		//  keep last 50 logins
 		if(user.loginHistory.length > 50){
 			user.loginHistory = user.loginHistory.slice(-50);
 		}
 
-		// update lastLogin (schema rename from lastlogin)
 		user.lastLogin = Date.now()
 		await user.save()
 
@@ -261,7 +259,7 @@ const resendVerificationEmail = async (req, res) => {
 		// Generate new verification token
 	  const verificationToken = generateRandomToken()
 	  user.verificationToken = verificationToken
-	  user.verificationTokenExpiredAt = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+	  user.verificationTokenExpiredAt = Date.now() + 24 * 60 * 60 * 1000
 	  await user.save()
   
 		// Send verification email (background)
@@ -332,11 +330,11 @@ const forgotPassword = async (req, res) => {
 	  // Generate reset token
 	  const resetToken = generateRandomToken()
 	  user.resetPasswordToken = resetToken
-	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000 // 1 hour
+	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000
 	  await user.save()
   
-		// Send password reset email (background)
-		const emailContent = generatePasswordResetEmail(user.name, resetToken, email)
+		// Send password reset email (background) - include user role for proper link
+		const emailContent = generatePasswordResetEmail(user.name, resetToken, email, user.role)
 		setImmediate(async () => {
 			try {
 				const ok = await sendEmail({

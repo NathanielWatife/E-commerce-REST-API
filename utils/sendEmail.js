@@ -83,24 +83,33 @@ const generateVerificationEmail = (name, token, email) => {
 }
 
 //Generate password reset email content
-const generatePasswordResetEmail = (name, token, email) => {
+const generatePasswordResetEmail = (name, token, email, userRole) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
-  const resetLink = `${clientUrl}/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(token)}`
+  // Determine reset path based on user role
+  const isAdmin = userRole === 'admin' || userRole === 'super-admin'
+  const resetPath = isAdmin ? '/admin/reset-password' : '/reset-password'
+  const resetLink = `${clientUrl}${resetPath}?email=${encodeURIComponent(email)}&code=${encodeURIComponent(token)}`
+  
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-      <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
+      <h2 style="color: #333; text-align: center;">${isAdmin ? 'Admin ' : ''}Password Reset Request</h2>
       <p>Hello ${name},</p>
-      <p>We received a request to reset your password. Please use the code below to reset your password:</p>
-      <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; letter-spacing: 5px;">
+      <p>We received a request to reset your ${isAdmin ? 'admin account ' : ''}password. Please use the 6-digit code below to reset your password:</p>
+      <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 32px; font-weight: bold; margin: 20px 0; letter-spacing: 8px; border-radius: 8px;">
         ${token}
       </div>
-      <p>Or click the button below to go directly to the reset page:</p>
+      <p style="text-align: center; margin: 20px 0;">Or click the button below to go directly to the reset page:</p>
       <p style="text-align: center;">
-        <a href="${resetLink}" style="display: inline-block; padding: 12px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 4px;">Reset Password</a>
+        <a href="${resetLink}" style="display: inline-block; padding: 14px 28px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Reset Password</a>
       </p>
-      <p>This code will expire in 1 hour.</p>
-      <p>If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
-      <p>Best regards,<br>The Team</p>
+      <p style="color: #666; font-size: 14px; margin-top: 20px;">
+        <strong>Important:</strong> This code will expire in <strong>1 hour</strong>.
+      </p>
+      <p style="color: #666; font-size: 14px;">
+        If you did not request a password reset, please ignore this email or contact support if you have concerns about your account security.
+      </p>
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+      <p>Best regards,<br>The Raddazle Team</p>
     </div>
   `
 }
