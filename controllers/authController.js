@@ -333,8 +333,8 @@ const forgotPassword = async (req, res) => {
 	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000
 	  await user.save()
   
-		// Send password reset email (background)
-		const emailContent = generatePasswordResetEmail(user.name, resetToken, email)
+		// Send password reset email (background) - include user role for proper link
+		const emailContent = generatePasswordResetEmail(user.name, resetToken, email, user.role)
 		setImmediate(async () => {
 			try {
 				const ok = await sendEmail({
