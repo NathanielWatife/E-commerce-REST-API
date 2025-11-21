@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import dotenv from 'dotenv'
-import mongoose from 'mongoose'
-import bcryptjs from 'bcryptjs'
-import { connectDB } from '../config/db.js'
-import { User } from '../models/User.js'
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const bcryptjs = require('bcryptjs');
+const { connectDB } = require('../config/db.js');
+const { User } = require('../models/User.js');
 
-dotenv.config()
+dotenv.config();
 
 const EMAIL = process.env.SUPER_ADMIN_EMAIL
 const PASSWORD = process.env.SUPER_ADMIN_PASSWORD
