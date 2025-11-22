@@ -20,6 +20,7 @@ const requestLogger = require('./middleware/requestLogger.js');
 const logger = require("./utils/logger.js");
 const { paystackWebhook, flutterwaveWebhook } = require('./controllers/paymentController.js');
 const { startPaymentReconciler } = require('./utils/paymentReconciler.js');
+const { initSuperAdmin } = require('./utils/initSuperAdmin.js');
 
 dotenv.config();
 const app = express();
@@ -134,8 +135,21 @@ app.use((err, req, res, next) => {
 
 
 const PORT = process.env.PORT
-app.listen(PORT, () => {
-  connectDB();
-  logger.info(`Backend Server running on ${PORT}`);
-  try { startPaymentReconciler(); } catch (e) { logger.warn('Reconciler failed to start', e); }
+app.listen(PORT, async () => {
+  try {
+    await connectDB();
+    logger.info(`Backend Server running on ${PORT}`);
+    
+    // Auto-initialize super admin on startup
+    await initSuperAdmin();
+    
+    // Start payment reconciler
+    try { 
+      startPaymentReconciler(); 
+    } catch (e) { 
+      logger.warn('Reconciler failed to start', e); 
+    }
+  } catch (error) {
+    logger.error('Server startup error:', error);
+  }
 });
