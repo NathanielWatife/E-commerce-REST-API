@@ -61,20 +61,29 @@ app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))
 const __uploads = path.join(process.cwd(), 'uploads')
 app.use('/uploads', express.static(__uploads))
 
-app.use((err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode
-  res.status(statusCode)
-  res.json({
-    success: false,
-    message: err.message,
-    stack: process.env.NODE_ENV ? err.stack : undefined
-  })
-})
-
+// 404 handler - must come before error handler
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
     message: `Not found - ${req.originalUrl}`
+  })
+})
+
+// Global error handler - Express 5 compatible
+app.use((err, req, res, next) => {
+  // Log the error
+  logger.error('Express error handler:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  })
+  
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode
+  res.status(statusCode).json({
+    success: false,
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   })
 })
 
