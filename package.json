@@ -22,7 +22,6 @@
   },
   "homepage": "https://github.com/NathanielWatife/E-commerce-REST-API#readme",
   "dependencies": {
-    "debug": "^4.3.6",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
