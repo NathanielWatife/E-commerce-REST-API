@@ -1,9 +1,9 @@
+require("./utils/ensureDebugCommon.js");
 const express = require("express");
 const path = require("path");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-require("./utils/ensureDebugCommon.js");
 const { connectDB } = require("./config/db.js");
 const authRoutes = require("./routes/authRoutes.js");
 const adminRoutes = require("./routes/adminRoutes.js");
