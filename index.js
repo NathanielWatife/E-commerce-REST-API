@@ -24,6 +24,24 @@ const { startPaymentReconciler } = require('./utils/paymentReconciler.js');
 dotenv.config();
 const app = express();
 
+// Database connection middleware for serverless
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+if (isServerless) {
+  // In serverless, ensure DB connection before each request
+  app.use(async (req, res, next) => {
+    try {
+      await connectDB();
+      next();
+    } catch (error) {
+      logger.error('Database connection failed in request middleware:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection error'
+      });
+    }
+  });
+}
+
 app.post('/api/payments/paystack/webhook', express.raw({ type: 'application/json' }), paystackWebhook)
 app.post('/api/payments/flutterwave/webhook', express.raw({ type: 'application/json' }), flutterwaveWebhook)
 
@@ -76,7 +94,13 @@ app.get('/', (req, res) => {
   })
 })
 
-app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))
+app.get('/api/health', (req, res) => res.status(200).json({ 
+  ok: true,
+  environment: process.env.NODE_ENV,
+  mongooseState: require('mongoose').connection.readyState,
+  // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+  mongoConfigured: !!process.env.MONGO_URI
+}))
 
 const __uploads = path.join(process.cwd(), 'uploads')
 app.use('/uploads', express.static(__uploads))

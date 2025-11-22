@@ -1,7 +1,16 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger.js');
 
+// Cache the database connection for serverless
+let cachedConnection = null;
+
 const connectDB = async () => {
+    // Return existing connection if available (serverless optimization)
+    if (cachedConnection && mongoose.connection.readyState === 1) {
+        logger.debug('Using cached database connection');
+        return cachedConnection;
+    }
+
     try {
         if (!process.env.MONGO_URI) {
             const errorMsg = 'Database Environment variable is not defined';
@@ -17,7 +26,8 @@ const connectDB = async () => {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             family: 4,
-            ...(process.env.NODE_ENV && {
+            bufferCommands: false, // Disable buffering in serverless
+            ...(process.env.NODE_ENV === 'production' && {
                 retryWrites: true,
                 w: 'majority'
             })
@@ -26,10 +36,14 @@ const connectDB = async () => {
         logger.info('Attempting to connect to Database...', {
             database: 'Raddazle',
             environment: process.env.NODE_ENV,
-            mongooseVersion: mongoose.version
+            mongooseVersion: mongoose.version,
+            isServerless: !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
         });
 
         const connection = await mongoose.connect(`${process.env.MONGO_URI}`, connectionOptions);
+        
+        // Cache the connection for reuse in serverless
+        cachedConnection = connection;
         
         logger.info('Database connection established successfully', {
             database: connection.connection.name,
@@ -44,10 +58,12 @@ const connectDB = async () => {
 
         mongoose.connection.on('error', (err) => {
             logger.error('Database connection error', err);
+            cachedConnection = null; // Clear cache on error
         });
 
         mongoose.connection.on('disconnected', () => {
             logger.warn('Database is disconnected');
+            cachedConnection = null; // Clear cache on disconnect
         });
 
         return connection;
@@ -56,18 +72,27 @@ const connectDB = async () => {
         logger.error('Database connection failed', error, {
             database: 'Raddazle',
             environment: process.env.NODE_ENV,
-            retryAttempt: false
+            mongoUri: process.env.MONGO_URI ? 'Set' : 'Not Set'
         });
-        process.exit(1);
+        cachedConnection = null;
+        
+        // Don't exit in serverless environments
+        if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+            process.exit(1);
+        }
+        throw error;
     }
 };
 
 
-process.on('SIGINT', async () => {
-    logger.info('Received SIGINT. Gracefully shutting down database connection...');
-    await mongoose.connection.close();
-    logger.info('Database connection closed.');
-    process.exit(0);
-});
+// Only set up SIGINT handler in non-serverless environments
+if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    process.on('SIGINT', async () => {
+        logger.info('Received SIGINT. Gracefully shutting down database connection...');
+        await mongoose.connection.close();
+        logger.info('Database connection closed.');
+        process.exit(0);
+    });
+}
 
 module.exports = { connectDB };
