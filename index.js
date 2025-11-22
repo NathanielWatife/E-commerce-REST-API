@@ -55,6 +55,26 @@ app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/contact', contactRoutes)
 
+// Root route - API info
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Raddazle E-commerce API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      products: '/api/products',
+      categories: '/api/categories',
+      cart: '/api/cart',
+      orders: '/api/orders',
+      payments: '/api/payments',
+      users: '/api/users',
+      admin: '/api/admin'
+    }
+  })
+})
 
 app.get('/api/health', (req, res) => res.status(200).json({ ok: true }))
 
