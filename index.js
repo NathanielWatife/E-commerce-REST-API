@@ -77,6 +77,19 @@ app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/contact', contactRoutes)
 
+// Debug endpoint: echo cookies and headers (useful for verifying cookie presence)
+app.get('/api/debug/cookie', (req, res) => {
+  res.status(200).json({
+    success: true,
+    cookies: req.cookies || {},
+    headers: {
+      origin: req.headers.origin,
+      cookie: req.headers.cookie,
+      authorization: req.headers.authorization
+    }
+  })
+})
+
 // Root route - API info
 app.get('/', (req, res) => {
   res.status(200).json({
