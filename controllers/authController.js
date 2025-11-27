@@ -6,14 +6,12 @@ const { sendEmail, generateVerificationEmail, generatePasswordResetEmail, genera
 const logger = require("../utils/logger.js");
 
 
-// helper function to generate random token
 const generateRandomToken = (length = 6) => {
 	return Math.floor(100000 + Math.random() * 900000)
 		.toString()
 		.substring(0, length)
 }
 
-// function to get user IP and device information
 const getClientInfo = (req) => {
 	const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress
 	const userAgent = req.headers["user-agent"] || "Unknown Device"
@@ -27,7 +25,6 @@ const getClientInfo = (req) => {
 
 // user signup
 const signup = async (req, res) => {
-	// validate the user inputs
 	const errors = validationResult(req);
 	if(!errors.isEmpty()) {
 		return res.status(400).json({
@@ -45,11 +42,9 @@ const signup = async (req, res) => {
 				message: "User already exists"
 			});
 		}
-		// hash the password
 		const hashPassword = await bcryptjs.hash(password, 12);
 		const verificationToken = generateRandomToken();
 
-		// clear user
 		const user = new User({
 			name,
 			email,
@@ -59,7 +54,6 @@ const signup = async (req, res) => {
 		});
 		await user.save()
 
-		// send verification email in background (don't block response)
 		const emailContent = generateVerificationEmail(name, verificationToken, email)
 		setImmediate(async () => {
 			try {
@@ -74,7 +68,6 @@ const signup = async (req, res) => {
 			}
 		})
 
-		// jwt
 		generateTokenAndSetCookie(res, user._id)
 		return res.status(201).json({
 			success: true,
@@ -85,7 +78,6 @@ const signup = async (req, res) => {
 				email: user.email,
 				isVerified: user.isVerified
 			},
-			// expose code in dev to speed up testing
 			debug: process.env.NODE_ENV !== "production" ? { verificationToken } : undefined,
 		})
 	} catch (error) {
@@ -102,7 +94,6 @@ const signup = async (req, res) => {
 
 // login 
 const login = async (req, res) => {
-	// validate user inputs
 	const errors = validationResult(req)
 	if (!errors.isEmpty()) {
 		return res.status(400).json({
@@ -129,7 +120,6 @@ const login = async (req, res) => {
 			})
 		}
 
-		// if user is verified
 		if(!user.isVerified) {
 			return res.status(403).json({
 				success: false,
@@ -137,10 +127,8 @@ const login = async (req, res) => {
 			})
 		}
 
-		// get client informations for login notifications
 		const clientInfo = getClientInfo(req)
 
-		// send client info login notification
 		const loginEmailContent = generateLoginNotificationEmail(user.name, clientInfo)
 		await sendEmail({
 			email: user.email,
@@ -161,7 +149,6 @@ const login = async (req, res) => {
 		user.lastLogin = Date.now()
 		await user.save()
 
-		// generate token
 		const token = generateTokenAndSetCookie(res, user._id);
 
 		return res.status(200).json({
@@ -207,13 +194,11 @@ const verifyEmail = async (req, res) => {
 		})
 	  }
   
-	  // Update user verification status
 	  user.isVerified = true
 	  user.verificationToken = undefined
 	  user.verificationTokenExpiredAt = undefined
 	  await user.save()
   
-	  // Send welcome email after successful verification
 	  const welcomeEmailContent = generateWelcomeEmail(user.name)
 	  await sendEmail({
 		email: user.email,
@@ -256,13 +241,11 @@ const resendVerificationEmail = async (req, res) => {
 		})
 	  }
   
-		// Generate new verification token
 	  const verificationToken = generateRandomToken()
 	  user.verificationToken = verificationToken
 	  user.verificationTokenExpiredAt = Date.now() + 24 * 60 * 60 * 1000
 	  await user.save()
   
-		// Send verification email (background)
 		const emailContent = generateVerificationEmail(user.name, verificationToken, email)
 		setImmediate(async () => {
 			try {
@@ -327,13 +310,11 @@ const forgotPassword = async (req, res) => {
 		})
 	  }
   
-	  // Generate reset token
 	  const resetToken = generateRandomToken()
 	  user.resetPasswordToken = resetToken
 	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000
 	  await user.save()
   
-		// Send password reset email (background) - include user role for proper link
 		const emailContent = generatePasswordResetEmail(user.name, resetToken, email, user.role)
 		setImmediate(async () => {
 			try {
@@ -381,7 +362,6 @@ const resetPassword = async (req, res) => {
 		})
 	  }
   
-	  // Hash new password and update user
 	  const hashPassword = await bcryptjs.hash(newPassword, 12)
 	  user.password = hashPassword
 	  user.resetPasswordToken = undefined

@@ -61,7 +61,7 @@ const sendEmail = async (options) => {
 
 // Generate verification email content
 const generateVerificationEmail = (name, token, email) => {
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
+  const clientUrl = process.env.CLIENT_URL
   const verifyLink = `${clientUrl}/verify-email?email=${encodeURIComponent(email)}`
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
@@ -84,7 +84,7 @@ const generateVerificationEmail = (name, token, email) => {
 
 //Generate password reset email content
 const generatePasswordResetEmail = (name, token, email, userRole) => {
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
+  const clientUrl = process.env.CLIENT_URL
   // Determine reset path based on user role
   const isAdmin = userRole === 'admin' || userRole === 'super-admin'
   const resetPath = isAdmin ? '/admin/reset-password' : '/reset-password'

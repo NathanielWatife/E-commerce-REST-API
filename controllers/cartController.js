@@ -13,7 +13,6 @@ const getCart = async(req, res) => {
 		})
 
 		if (!cart) {
-			// create new cart
 
 			cart = new Cart({
 				user: req.user._id,
@@ -51,7 +50,6 @@ const addToCart = async (req, res) => {
 	try {
 		const { productId, quantity = 1 } = req.body
 
-		// validate product
 		const product = await Product.findById(productId)
 		if (!product) {
 			return res.status(404).json({
@@ -60,7 +58,6 @@ const addToCart = async (req, res) => {
 			});
 		}
 
-		// check if product is available in stock
 		if(product.countInStock < quantity) {
 			return res.status(400).json({
 				success: false,
@@ -68,7 +65,6 @@ const addToCart = async (req, res) => {
 			})
 		}
 
-		// find user cart or create a new one
 		let cart = await Cart.findOne({ user: req.user._id })
 		if (!cart) {
 			cart = new Cart({

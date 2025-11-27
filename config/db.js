@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger.js');
 
-// Cache the database connection for serverless
 let cachedConnection = null;
 
 const connectDB = async () => {
-    // Return existing connection if available (serverless optimization)
     if (cachedConnection && mongoose.connection.readyState === 1) {
         logger.debug('Using cached database connection');
         return cachedConnection;
@@ -26,7 +24,7 @@ const connectDB = async () => {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             family: 4,
-            bufferCommands: false, // Disable buffering in serverless
+            bufferCommands: false,
             ...(process.env.NODE_ENV === 'production' && {
                 retryWrites: true,
                 w: 'majority'
@@ -42,7 +40,6 @@ const connectDB = async () => {
 
         const connection = await mongoose.connect(`${process.env.MONGO_URI}`, connectionOptions);
         
-        // Cache the connection for reuse in serverless
         cachedConnection = connection;
         
         logger.info('Database connection established successfully', {
@@ -58,12 +55,12 @@ const connectDB = async () => {
 
         mongoose.connection.on('error', (err) => {
             logger.error('Database connection error', err);
-            cachedConnection = null; // Clear cache on error
+            cachedConnection = null;
         });
 
         mongoose.connection.on('disconnected', () => {
             logger.warn('Database is disconnected');
-            cachedConnection = null; // Clear cache on disconnect
+            cachedConnection = null;
         });
 
         return connection;
@@ -76,7 +73,6 @@ const connectDB = async () => {
         });
         cachedConnection = null;
         
-        // Don't exit in serverless environments
         if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
             process.exit(1);
         }
@@ -85,7 +81,6 @@ const connectDB = async () => {
 };
 
 
-// Only set up SIGINT handler in non-serverless environments
 if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
     process.on('SIGINT', async () => {
         logger.info('Received SIGINT. Gracefully shutting down database connection...');
