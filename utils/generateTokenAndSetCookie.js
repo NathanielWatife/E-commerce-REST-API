@@ -17,8 +17,9 @@ const generateTokenAndSetCookie = (res, userId) => {
 
     res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: true, // Always true for Vercel/HTTPS
+        sameSite: "none", // Always none for cross-site
+        domain: ".vercel.app", // Set domain for Vercel deployment
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return token;

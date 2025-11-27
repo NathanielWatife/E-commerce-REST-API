@@ -53,21 +53,12 @@ app.use(cookieParser());
 app.use(requestLogger);
 // Robust CORS handling: allow comma-separated origins in CORS_ORIGIN
 {
-  const raw = process.env.CORS_ORIGIN || '';
-  const whitelist = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const frontendOrigin = process.env.CLIENT_URL || 'https://raddazle-react.vercel.app';
   const corsOptions = {
     credentials: true,
+    origin: frontendOrigin,
     optionsSuccessStatus: 200,
     maxAge: 600,
-    origin: (incomingOrigin, callback) => {
-      // Allow server-to-server requests or tools that don't set origin
-      if (!incomingOrigin) return callback(null, true);
-      // If whitelist is empty, be permissive for development
-      if (whitelist.length === 0) return callback(null, true);
-      // Exact match required
-      if (whitelist.includes(incomingOrigin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
-    }
   };
   app.use(cors(corsOptions));
 }
