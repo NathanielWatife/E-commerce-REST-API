@@ -386,7 +386,7 @@ const resetPassword = async (req, res) => {
 // get current authenticated user
 const getCurrentUser = async (req, res) => {
 	try {
-		const user = await User.findById(req.user?._id).select("-password")
+		const user = await User.findById(req.user?._id).select("name email role isVerified isActive accountStatus")
 		if (!user) {
 			return res.status(404).json({
 				success: false,
@@ -396,7 +396,15 @@ const getCurrentUser = async (req, res) => {
 
 		return res.status(200).json({
 			success: true,
-			user,
+			user: {
+				id: user._id,
+				name: user.name,
+				email: user.email,
+				role: user.role,
+				isVerified: user.isVerified,
+				isActive: user.isActive,
+				accountStatus: user.accountStatus
+			}
 		})
 	} catch (error) {
 		logger.error("Get current user error:", error)
