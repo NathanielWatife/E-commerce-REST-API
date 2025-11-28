@@ -16,6 +16,7 @@ const notesRoutes = require('./routes/notesRoutes.js');
 const chatbotRoutes = require('./routes/chatbotRoutes.js');
 const uploadRoutes = require('./routes/uploadRoutes.js');
 const contactRoutes = require('./routes/contactRoutes.js');
+const debugRoutes = require('./routes/debugRoutes.js');
 const requestLogger = require('./middleware/requestLogger.js');
 const logger = require("./utils/logger.js");
 const { paystackWebhook, flutterwaveWebhook } = require('./controllers/paymentController.js');
@@ -75,6 +76,14 @@ app.use(requestLogger);
       // If no origin (e.g. curl, same-site), allow it
       if (!incomingOrigin) return callback(null, true);
       if (allowed.indexOf(incomingOrigin) !== -1) return callback(null, true);
+      // Allow Vercel preview domains if an allowed origin contains 'vercel.app'
+      // and the incoming origin is also a vercel.app subdomain. This helps
+      // with deployments that use dynamic preview URLs. Enable only when at
+      // least one configured client URL includes 'vercel.app'.
+      const allowedIncludesVercel = allowed.some(a => a.includes('vercel.app'));
+      if (allowedIncludesVercel && incomingOrigin.includes('.vercel.app')) {
+        return callback(null, true);
+      }
       // For debugging, include allowed list in error when not production
       const err = new Error('CORS policy: origin not allowed');
       err.allowedOrigins = allowed;
@@ -112,6 +121,8 @@ app.use("/api/payments", paymentRoutes)
 app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/contact', contactRoutes)
+// Debug routes (safe to enable by setting DEBUG_KEY env var)
+app.use('/api/debug', debugRoutes)
 
 
 // Root route - API info

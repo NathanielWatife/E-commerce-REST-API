@@ -69,6 +69,20 @@ const signup = async (req, res) => {
 		})
 
 		generateTokenAndSetCookie(res, user._id)
+		// Log presence of Set-Cookie header (masked) to help debug cookie delivery
+		try {
+			const sc = res.getHeader && res.getHeader('Set-Cookie')
+			if (sc) {
+				const mask = (val) => String(val).replace(/(token=)[^;]+/, '$1***')
+				if (Array.isArray(sc)) {
+					logger.debug('Set-Cookie headers (masked):', sc.map(mask))
+				} else {
+					logger.debug('Set-Cookie header (masked):', mask(sc))
+				}
+			}
+		} catch (e) {
+			logger.warn('Failed to read Set-Cookie header for debug', e)
+		}
 		return res.status(201).json({
 			success: true,
 			message: "User created. Please check your email to verify your account.",
@@ -150,6 +164,20 @@ const login = async (req, res) => {
 		await user.save()
 
 		const token = generateTokenAndSetCookie(res, user._id);
+		// Log presence of Set-Cookie header (masked) to help debug cookie delivery
+		try {
+			const sc = res.getHeader && res.getHeader('Set-Cookie')
+			if (sc) {
+				const mask = (val) => String(val).replace(/(token=)[^;]+/, '$1***')
+				if (Array.isArray(sc)) {
+					logger.debug('Set-Cookie headers (masked):', sc.map(mask))
+				} else {
+					logger.debug('Set-Cookie header (masked):', mask(sc))
+				}
+			}
+		} catch (e) {
+			logger.warn('Failed to read Set-Cookie header for debug', e)
+		}
 
 		return res.status(200).json({
 			success: true,
