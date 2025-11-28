@@ -25,6 +25,13 @@ const { initSuperAdmin } = require('./utils/initSuperAdmin.js');
 dotenv.config();
 const app = express();
 
+// If running behind a proxy (Vercel, other platforms), trust the first proxy
+// so Express can correctly detect secure connections for setting 'secure' cookies.
+// This helps `res.cookie(..., { secure: true })` behave properly when behind HTTPS proxies.
+if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Database connection middleware for serverless
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 if (isServerless) {
@@ -51,16 +58,45 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(requestLogger);
-// Robust CORS handling: allow comma-separated origins in CORS_ORIGIN
+// Robust CORS handling: allow comma-separated origins in `CLIENT_URL` env var
+// and permit matching incoming request origins dynamically. Keep credentials
+// enabled so cookies are sent to/from the frontend.
 {
-  const frontendOrigin = process.env.CLIENT_URL || 'https://raddazle-react.vercel.app';
+  const raw = process.env.CLIENT_URL;
+  // allow comma-separated values in env var
+  const allowed = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   const corsOptions = {
     credentials: true,
-    origin: frontendOrigin,
+    origin: function (incomingOrigin, callback) {
+      // If no origin (e.g. curl, same-site), allow it
+      if (!incomingOrigin) return callback(null, true);
+      if (allowed.indexOf(incomingOrigin) !== -1) return callback(null, true);
+      // For debugging, include allowed list in error when not production
+      const err = new Error('CORS policy: origin not allowed');
+      err.allowedOrigins = allowed;
+      return callback(err, false);
+    },
     optionsSuccessStatus: 200,
     maxAge: 600,
   };
+
   app.use(cors(corsOptions));
+}
+
+// Debug cookie logger in non-production to help verify cookies are set and sent
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    logger.debug('Incoming request for debug:', {
+      path: req.path,
+      origin: req.headers.origin,
+      cookies: req.cookies,
+    });
+    next();
+  });
 }
 
 
