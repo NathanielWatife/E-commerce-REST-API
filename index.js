@@ -30,10 +30,46 @@ if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_
   app.set('trust proxy', 1);
 }
 
-// Database connection middleware for serverless
+// CORS Configuration - MUST be before any routes
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ];
+
+if (process.env.CLIENT_URL) {
+  const envOrigins = process.env.CLIENT_URL.split(',').map(s => s.trim()).filter(Boolean);
+  envOrigins.forEach(origin => {
+    if (!allowedOrigins.includes(origin)) {
+      allowedOrigins.push(origin);
+    }
+  });
+}
+
+const corsOptions = {
+  credentials: true,
+  origin: function (incomingOrigin, callback) {
+    if (!incomingOrigin) return callback(null, true);
+
+    if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
+
+    try {
+      const incomingHostname = new URL(incomingOrigin).hostname;
+      if (incomingHostname.endsWith('.vercel.app')) return callback(null, true);
+    } catch (e) {
+    }
+
+    logger.warn(`CORS blocked origin: ${incomingOrigin}`);
+    return callback(null, false);
+  },
+  optionsSuccessStatus: 200,
+  maxAge: 600,
+};
+
+app.use(cors(corsOptions));
+
+app.options('*', cors(corsOptions));
+
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 if (isServerless) {
-  // In serverless, ensure DB connection before each request
   app.use(async (req, res, next) => {
     try {
       await connectDB();
@@ -56,53 +92,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(requestLogger);
-
-// CORS Configuration
-const allowedOrigins = [
-  'https://ray-dazzle.vercel.app',
-  'https://ray-dazzle-api.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173',
-];
-
-// Add any additional origins from CLIENT_URL env variable
-if (process.env.CLIENT_URL) {
-  const envOrigins = process.env.CLIENT_URL.split(',').map(s => s.trim()).filter(Boolean);
-  envOrigins.forEach(origin => {
-    if (!allowedOrigins.includes(origin)) {
-      allowedOrigins.push(origin);
-    }
-  });
-}
-
-const corsOptions = {
-  credentials: true,
-  origin: function (incomingOrigin, callback) {
-    // If no origin (e.g. curl, same-site requests), allow it
-    if (!incomingOrigin) return callback(null, true);
-
-    // Check exact match
-    if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
-
-    // Allow any vercel.app subdomain for flexibility
-    try {
-      const incomingHostname = new URL(incomingOrigin).hostname;
-      if (incomingHostname.endsWith('.vercel.app')) return callback(null, true);
-    } catch (e) {
-      // If parsing fails, fall through to reject
-    }
-
-    logger.warn(`CORS blocked origin: ${incomingOrigin}`);
-    return callback(null, false);
-  },
-  optionsSuccessStatus: 200,
-  maxAge: 600,
-};
-
-app.use(cors(corsOptions));
-
-// Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
 
 // Debug cookie logger in non-production to help verify cookies are set and sent
 if (process.env.NODE_ENV !== 'production') {
@@ -155,14 +144,12 @@ app.get('/api/health', (req, res) => res.status(200).json({
   ok: true,
   environment: process.env.NODE_ENV,
   mongooseState: require('mongoose').connection.readyState,
-  // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
   mongoConfigured: !!process.env.MONGO_URI
 }))
 
 const __uploads = path.join(process.cwd(), 'uploads')
 app.use('/uploads', express.static(__uploads))
 
-// 404 handler - must come before error handler
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -170,9 +157,7 @@ app.use((req, res, next) => {
   })
 })
 
-// Global error handler - Express 5 compatible
 app.use((err, req, res, next) => {
-  // Log the error
   logger.error('Express error handler:', {
     message: err.message,
     stack: err.stack,
@@ -180,7 +165,6 @@ app.use((err, req, res, next) => {
     method: req.method
   })
   
-  // Ensure CORS headers are set on error responses
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -203,7 +187,6 @@ app.listen(PORT, async () => {
     await connectDB();
     logger.info(`Backend Server running on ${PORT}`);
     
-    // Auto-initialize super admin on startup
     await initSuperAdmin();
     
     // Start payment reconciler
