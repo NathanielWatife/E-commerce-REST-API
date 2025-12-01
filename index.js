@@ -16,7 +16,6 @@ const notesRoutes = require('./routes/notesRoutes.js');
 const chatbotRoutes = require('./routes/chatbotRoutes.js');
 const uploadRoutes = require('./routes/uploadRoutes.js');
 const contactRoutes = require('./routes/contactRoutes.js');
-const debugRoutes = require('./routes/debugRoutes.js');
 const requestLogger = require('./middleware/requestLogger.js');
 const logger = require("./utils/logger.js");
 const { paystackWebhook, flutterwaveWebhook } = require('./controllers/paymentController.js');
@@ -32,9 +31,13 @@ if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_
 
 // CORS Configuration - MUST be before any routes
 const allowedOrigins = [
-  process.env.CLIENT_URL,
-  ];
+  'https://ray-dazzle.vercel.app',
+  'https://ray-dazzle-api.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
 
+// Add any additional origins from CLIENT_URL env variable
 if (process.env.CLIENT_URL) {
   const envOrigins = process.env.CLIENT_URL.split(',').map(s => s.trim()).filter(Boolean);
   envOrigins.forEach(origin => {
@@ -47,26 +50,36 @@ if (process.env.CLIENT_URL) {
 const corsOptions = {
   credentials: true,
   origin: function (incomingOrigin, callback) {
+    // If no origin (e.g. curl, same-site requests), allow it
     if (!incomingOrigin) return callback(null, true);
 
+    // Check exact match
     if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
 
+    // Allow any vercel.app subdomain for flexibility
     try {
       const incomingHostname = new URL(incomingOrigin).hostname;
       if (incomingHostname.endsWith('.vercel.app')) return callback(null, true);
     } catch (e) {
+      // If parsing fails, fall through
     }
 
     logger.warn(`CORS blocked origin: ${incomingOrigin}`);
     return callback(null, false);
   },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   optionsSuccessStatus: 200,
-  maxAge: 600,
+  maxAge: 86400, // 24 hours
 };
 
+// Apply CORS middleware first
 app.use(cors(corsOptions));
 
-app.options('*', cors(corsOptions));
+// Explicitly handle all OPTIONS preflight requests
+app.options('*', (req, res) => {
+  res.status(200).end();
+});
 
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 if (isServerless) {
