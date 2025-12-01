@@ -56,64 +56,53 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(requestLogger);
-{
-  const raw = (process.env.CLIENT_URL || "").toString();
-  const allowed = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
 
-  // Build a set of allowed hostnames (without protocol) for flexible matching
-  const allowedHostnames = new Set();
-  allowed.forEach((entry) => {
-    try {
-      // If entry is a full origin (has protocol), extract hostname
-      if (/^https?:\/\//i.test(entry)) {
-        const u = new URL(entry);
-        allowedHostnames.add(u.hostname);
-      } else {
-        // hostname-only entry
-        allowedHostnames.add(entry.replace(/:\d+$/, ''));
-      }
-    } catch (e) {
-      // Fallback: treat as hostname
-      allowedHostnames.add(entry.replace(/:\d+$/, ''));
+// CORS Configuration
+const allowedOrigins = [
+  'https://ray-dazzle.vercel.app',
+  'https://ray-dazzle-api.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
+// Add any additional origins from CLIENT_URL env variable
+if (process.env.CLIENT_URL) {
+  const envOrigins = process.env.CLIENT_URL.split(',').map(s => s.trim()).filter(Boolean);
+  envOrigins.forEach(origin => {
+    if (!allowedOrigins.includes(origin)) {
+      allowedOrigins.push(origin);
     }
   });
-
-  const corsOptions = {
-    credentials: true,
-    origin: function (incomingOrigin, callback) {
-      // If no origin (e.g. curl, same-site requests), allow it
-      if (!incomingOrigin) return callback(null, true);
-
-      // Exact match against configured origins (preserves protocol/port if provided)
-      if (allowed.indexOf(incomingOrigin) !== -1) return callback(null, true);
-
-      // Try matching hostname-only entries (e.g. `ray-dazzle.vercel.app`)
-      try {
-        const incomingHostname = new URL(incomingOrigin).hostname;
-        if (allowedHostnames.has(incomingHostname)) return callback(null, true);
-
-        // Allow dynamic vercel subdomains when any allowed origin includes 'vercel.app'
-        const allowedIncludesVercel = Array.from(allowedHostnames).some(h => h.includes('vercel.app'));
-        if (allowedIncludesVercel && incomingHostname.endsWith('.vercel.app')) return callback(null, true);
-      } catch (e) {
-        // If parsing fails, fall through to reject
-      }
-
-      const err = new Error('CORS policy: origin not allowed');
-      // Attach allowed origins/hostnames to the error to help debugging in logs
-      err.allowedOrigins = allowed;
-      err.allowedHostnames = Array.from(allowedHostnames);
-      return callback(err, false);
-    },
-    optionsSuccessStatus: 200,
-    maxAge: 600,
-  };
-
-  app.use(cors(corsOptions));
 }
+
+const corsOptions = {
+  credentials: true,
+  origin: function (incomingOrigin, callback) {
+    // If no origin (e.g. curl, same-site requests), allow it
+    if (!incomingOrigin) return callback(null, true);
+
+    // Check exact match
+    if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
+
+    // Allow any vercel.app subdomain for flexibility
+    try {
+      const incomingHostname = new URL(incomingOrigin).hostname;
+      if (incomingHostname.endsWith('.vercel.app')) return callback(null, true);
+    } catch (e) {
+      // If parsing fails, fall through to reject
+    }
+
+    logger.warn(`CORS blocked origin: ${incomingOrigin}`);
+    return callback(null, false);
+  },
+  optionsSuccessStatus: 200,
+  maxAge: 600,
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
 
 // Debug cookie logger in non-production to help verify cookies are set and sent
 if (process.env.NODE_ENV !== 'production') {
@@ -190,6 +179,13 @@ app.use((err, req, res, next) => {
     path: req.path,
     method: req.method
   })
+  
+  // Ensure CORS headers are set on error responses
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
   
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode
   res.status(statusCode).json({
