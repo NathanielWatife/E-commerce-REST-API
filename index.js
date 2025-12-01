@@ -26,9 +26,6 @@ const { initSuperAdmin } = require('./utils/initSuperAdmin.js');
 dotenv.config();
 const app = express();
 
-// If running behind a proxy (Vercel, other platforms), trust the first proxy
-// so Express can correctly detect secure connections for setting 'secure' cookies.
-// This helps `res.cookie(..., { secure: true })` behave properly when behind HTTPS proxies.
 if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
@@ -59,34 +56,56 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(requestLogger);
-// Robust CORS handling: allow comma-separated origins in `CLIENT_URL` env var
-// and permit matching incoming request origins dynamically. Keep credentials
-// enabled so cookies are sent to/from the frontend.
 {
-  const raw = process.env.CLIENT_URL;
-  // allow comma-separated values in env var
+  const raw = (process.env.CLIENT_URL || "").toString();
   const allowed = raw
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // Build a set of allowed hostnames (without protocol) for flexible matching
+  const allowedHostnames = new Set();
+  allowed.forEach((entry) => {
+    try {
+      // If entry is a full origin (has protocol), extract hostname
+      if (/^https?:\/\//i.test(entry)) {
+        const u = new URL(entry);
+        allowedHostnames.add(u.hostname);
+      } else {
+        // hostname-only entry
+        allowedHostnames.add(entry.replace(/:\d+$/, ''));
+      }
+    } catch (e) {
+      // Fallback: treat as hostname
+      allowedHostnames.add(entry.replace(/:\d+$/, ''));
+    }
+  });
+
   const corsOptions = {
     credentials: true,
     origin: function (incomingOrigin, callback) {
-      // If no origin (e.g. curl, same-site), allow it
+      // If no origin (e.g. curl, same-site requests), allow it
       if (!incomingOrigin) return callback(null, true);
+
+      // Exact match against configured origins (preserves protocol/port if provided)
       if (allowed.indexOf(incomingOrigin) !== -1) return callback(null, true);
-      // Allow Vercel preview domains if an allowed origin contains 'vercel.app'
-      // and the incoming origin is also a vercel.app subdomain. This helps
-      // with deployments that use dynamic preview URLs. Enable only when at
-      // least one configured client URL includes 'vercel.app'.
-      const allowedIncludesVercel = allowed.some(a => a.includes('vercel.app'));
-      if (allowedIncludesVercel && incomingOrigin.includes('.vercel.app')) {
-        return callback(null, true);
+
+      // Try matching hostname-only entries (e.g. `ray-dazzle.vercel.app`)
+      try {
+        const incomingHostname = new URL(incomingOrigin).hostname;
+        if (allowedHostnames.has(incomingHostname)) return callback(null, true);
+
+        // Allow dynamic vercel subdomains when any allowed origin includes 'vercel.app'
+        const allowedIncludesVercel = Array.from(allowedHostnames).some(h => h.includes('vercel.app'));
+        if (allowedIncludesVercel && incomingHostname.endsWith('.vercel.app')) return callback(null, true);
+      } catch (e) {
+        // If parsing fails, fall through to reject
       }
-      // For debugging, include allowed list in error when not production
+
       const err = new Error('CORS policy: origin not allowed');
+      // Attach allowed origins/hostnames to the error to help debugging in logs
       err.allowedOrigins = allowed;
+      err.allowedHostnames = Array.from(allowedHostnames);
       return callback(err, false);
     },
     optionsSuccessStatus: 200,
@@ -121,9 +140,6 @@ app.use("/api/payments", paymentRoutes)
 app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/contact', contactRoutes)
-// Debug routes (safe to enable by setting DEBUG_KEY env var)
-app.use('/api/debug', debugRoutes)
-
 
 // Root route - API info
 app.get('/', (req, res) => {
