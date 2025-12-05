@@ -22,7 +22,6 @@ const validateCreateOrder = [
   body("shippingAddress.street").notEmpty().withMessage("Street is required"),
   body("shippingAddress.city").notEmpty().withMessage("City is required"),
   body("shippingAddress.state").notEmpty().withMessage("State is required"),
-  body("shippingAddress.postalCode").notEmpty().withMessage("Postal code is required"),
   body("shippingAddress.country").notEmpty().withMessage("Country is required"),
   body("paymentMethod").notEmpty().withMessage("Payment method is required"),
 ]
