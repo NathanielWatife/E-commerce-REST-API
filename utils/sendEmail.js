@@ -52,11 +52,30 @@ const sendEmail = async (options) => {
       to: options.email,
       subject: options.subject,
       html: options.message,
+      // Additional headers for better deliverability (especially Yahoo/Gmail)
+      headers: {
+        'X-Priority': '1',
+        'X-Mailer': 'Raddazle Mailer',
+        'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=unsubscribe>`,
+      },
+      // Plain text alternative helps with spam filters
+      text: options.text || options.message.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
     }
-    await transporter.sendMail(mailOptions)
+    
+    const info = await transporter.sendMail(mailOptions)
+    logger.info(`Email sent successfully to ${options.email}`, { 
+      messageId: info.messageId,
+      response: info.response 
+    })
     return true
   } catch (error) {
-    logger.error("Email sending error:", error)
+    logger.error("Email sending error:", { 
+      to: options.email, 
+      subject: options.subject,
+      error: error.message,
+      code: error.code,
+      response: error.response
+    })
     return false
   }
 }
