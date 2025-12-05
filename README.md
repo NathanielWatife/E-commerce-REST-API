@@ -34,6 +34,11 @@ E-commerce REST API built with Node.js, Express and MongoDB.
          # Flutterwave (optional)
          FLW_SECRET_KEY=FLWSECK-xxxx
          # Frontend must set REACT_APP_FLW_PUBLIC_KEY=FLWPUBK-xxxx in raddazle-react/.env
+         
+         # Image uploads (REQUIRED for production/Vercel)
+         CLOUDINARY_CLOUD_NAME=your_cloud_name
+         CLOUDINARY_API_KEY=your_api_key
+         CLOUDINARY_API_SECRET=your_api_secret
 
      - Start backend (dev):
 
@@ -207,4 +212,38 @@ npm run init:super-admin
 The script will create (or update) a user to role `super-admin`, ensure the account is verified/active, and optionally reset the password if `SUPER_ADMIN_RESET=true`.
 
 Security tip: unset `SUPER_ADMIN_RESET` after running in production.
+
+
+## Image Uploads (Cloudinary)
+
+Product and category images are uploaded via `POST /api/upload`. For production deployments (especially on Vercel or other serverless platforms), you **must** configure Cloudinary, as local file storage is ephemeral and images will be lost.
+
+### Setup
+
+1. Create a free Cloudinary account at https://cloudinary.com
+2. From your Cloudinary Dashboard, copy your Cloud Name, API Key, and API Secret
+3. Add these environment variables to your backend `.env` or Vercel environment settings:
+
+```
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+### How it works
+
+- **With Cloudinary configured**: Images are uploaded to Cloudinary and stored permanently. The API returns a full Cloudinary URL (e.g., `https://res.cloudinary.com/...`).
+- **Without Cloudinary (development only)**: Images are stored locally in the `/uploads` folder. On serverless platforms like Vercel, these images are stored in `/tmp` and will be lost when the function terminates.
+
+### Endpoints
+
+- `POST /api/upload` — Upload a single image (admin only). Returns `{ success: true, url: "..." }`.
+- `DELETE /api/upload/:public_id` — Delete an image from Cloudinary (admin only).
+
+### Troubleshooting
+
+If uploaded images show as placeholders:
+1. Verify Cloudinary environment variables are set correctly on your backend
+2. Check the backend logs for any upload errors
+3. Ensure the uploaded image URL is being saved to the product/category correctly
 
