@@ -242,14 +242,17 @@ const updateProduct = async (req, res) => {
 // delete product only admins access
 const deleteProduct = async (req, res) => {
     try {
-        const product =  await Product.findById(req.params.id)
+        const product = await Product.findById(req.params.id);
 
         if (!product) {
+            logger.warn(`Delete product failed: Product ${req.params.id} not found`);
             return res.status(404).json({
                 success: false,
                 message: "Product not found"
             });
         }
+
+        logger.info(`Attempting to delete product: ${product._id} - ${product.name}`);
 
         // Attempt to delete local uploaded image if it resides under /uploads
         try {
@@ -268,18 +271,24 @@ const deleteProduct = async (req, res) => {
             logger.warn(`Failed to delete product image file: ${e.message}`);
         }
 
-        await product.deleteOne()
+        // Delete the product
+        await product.deleteOne();
+        logger.info(`Successfully deleted product: ${req.params.id}`);
 
         return res.status(200).json({
             success: true,
             message: "Product removed"
         });
     } catch (error) {
-        logger.error("Delete products error:", error);
+        logger.error("Delete product error:", {
+            error: error.message,
+            stack: error.stack,
+            productId: req.params.id
+        });
         return res.status(500).json({
             success: false,
-            message: "Server error",
-            error: process.env.NODE_ENV ? error.message : undefined
+            message: error.message || "Server error",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
