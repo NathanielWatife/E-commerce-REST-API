@@ -35,24 +35,26 @@ const signup = async (req, res) => {
 
 	const { name, email, password } = req.body;
 	try {
-		const userAlreadyExists = await User.findOne({email})
+		const { data: userAlreadyExists, error: searchError } = await User.findOne({email})
+		// Assuming we log searchError if any
+		if (searchError) throw searchError;
 		if (userAlreadyExists) {
 			return res.status(400).json({
-				succcess: false,
+				success: false,
 				message: "User already exists"
 			});
 		}
 		const hashPassword = await bcryptjs.hash(password, 12);
 		const verificationToken = generateRandomToken();
 
-		const user = new User({
+		const { data: user, error: createError } = await User.create({
 			name,
 			email,
 			password: hashPassword,
 			verificationToken,
-			verificationTokenExpiredAt: Date.now() + 24 * 60 * 60 * 1000, 
+			verificationTokenExpiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), 
 		});
-		await user.save()
+		if (createError) throw createError;
 
 		const emailContent = generateVerificationEmail(name, verificationToken, email)
 		setImmediate(async () => {
@@ -68,7 +70,7 @@ const signup = async (req, res) => {
 			}
 		})
 
-		generateTokenAndSetCookie(res, user._id)
+		generateTokenAndSetCookie(res, user.id)
 		// Log presence of Set-Cookie header (masked) to help debug cookie delivery
 		try {
 			const sc = res.getHeader && res.getHeader('Set-Cookie')
@@ -87,10 +89,10 @@ const signup = async (req, res) => {
 			success: true,
 			message: "User created. Please check your email to verify your account.",
 			user: {
-				id: user._id,
+				id: user.id,
 				name: user.name,
 				email: user.email,
-				isVerified: user.isVerified
+				isVerified: user.isVerified || false
 			},
 			debug: process.env.NODE_ENV !== "production" ? { verificationToken } : undefined,
 		})
@@ -118,7 +120,8 @@ const login = async (req, res) => {
 
 	const { email, password } = req.body;
 	try {
-		const user = await User.findOne({ email }).select("+password")
+		const { data: user, error: findError } = await User.findOne({ email })
+		if (findError) throw findError;
 		if (!user) {
 			return res.status(401).json({
 				success: false,
@@ -150,20 +153,24 @@ const login = async (req, res) => {
 			message: loginEmailContent
 		});
 
-		user.loginHistory.push({
+		let loginHistory = user.loginHistory || [];
+		loginHistory.push({
 			ip: clientInfo.ip,
 			device: clientInfo.device,
 			time: new Date()
 		});
 
-		if(user.loginHistory.length > 50){
-			user.loginHistory = user.loginHistory.slice(-50);
+		if(loginHistory.length > 50){
+			loginHistory = loginHistory.slice(-50);
 		}
 
-		user.lastLogin = Date.now()
-		await user.save()
+		const { data: updatedUser, error: updateError } = await User.update(user.id, {
+			loginHistory,
+			lastLogin: new Date().toISOString()
+		});
+		if (updateError) throw updateError;
 
-		const token = generateTokenAndSetCookie(res, user._id);
+		const token = generateTokenAndSetCookie(res, user.id);
 		// Log presence of Set-Cookie header (masked) to help debug cookie delivery
 		try {
 			const sc = res.getHeader && res.getHeader('Set-Cookie')
@@ -184,11 +191,11 @@ const login = async (req, res) => {
 			message: "Logged in successfully",
 			token: token,
 			user: {
-				id: user._id,
+				id: user.id,
 				name: user.name,
 				email: user.email,
 				role: user.role,
-				isVerified: user.isVerified
+				isVerified: user.isVerified || false
 			}
 		});
 	} catch (error) {
@@ -209,23 +216,25 @@ const verifyEmail = async (req, res) => {
 	const { email, token } = req.body
   
 	try {
-	  const user = await User.findOne({
+	  const { data: user, error: findError } = await User.findOne({
 		email,
-		verificationToken: token,
-		verificationTokenExpiredAt: { $gt: Date.now() },
+		verificationToken: token
 	  })
+      if (findError) throw findError;
   
-	  if (!user) {
+	  if (!user || new Date(user.verificationTokenExpiredAt) < new Date()) {
 		return res.status(400).json({
 		  success: false,
 		  message: "Invalid or expired verification token",
 		})
 	  }
   
-	  user.isVerified = true
-	  user.verificationToken = undefined
-	  user.verificationTokenExpiredAt = undefined
-	  await user.save()
+	  const { error: updateError } = await User.update(user.id, {
+		isVerified: true,
+		verificationToken: null,
+		verificationTokenExpiredAt: null
+	  });
+      if (updateError) throw updateError;
   
 	  const welcomeEmailContent = generateWelcomeEmail(user.name)
 	  await sendEmail({
@@ -254,7 +263,8 @@ const resendVerificationEmail = async (req, res) => {
 	const { email } = req.body
   
 	try {
-	  const user = await User.findOne({ email })
+	  const { data: user, error: findError } = await User.findOne({ email })
+	  if (findError) throw findError;
 	  if (!user) {
 		return res.status(404).json({
 		  success: false,
@@ -270,9 +280,11 @@ const resendVerificationEmail = async (req, res) => {
 	  }
   
 	  const verificationToken = generateRandomToken()
-	  user.verificationToken = verificationToken
-	  user.verificationTokenExpiredAt = Date.now() + 24 * 60 * 60 * 1000
-	  await user.save()
+	  const { error: updateError } = await User.update(user.id, {
+		verificationToken,
+		verificationTokenExpiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+	  });
+	  if (updateError) throw updateError;
   
 		const emailContent = generateVerificationEmail(user.name, verificationToken, email)
 		setImmediate(async () => {
@@ -330,7 +342,8 @@ const forgotPassword = async (req, res) => {
 	const { email } = req.body
   
 	try {
-	  const user = await User.findOne({ email })
+	  const { data: user, error: findError } = await User.findOne({ email })
+	  if (findError) throw findError;
 	  if (!user) {
 		return res.status(404).json({
 		  success: false,
@@ -339,9 +352,11 @@ const forgotPassword = async (req, res) => {
 	  }
   
 	  const resetToken = generateRandomToken()
-	  user.resetPasswordToken = resetToken
-	  user.resetPasswordExpiredAt = Date.now() + 60 * 60 * 1000
-	  await user.save()
+	  const { error: updateError } = await User.update(user.id, {
+		resetPasswordToken: resetToken,
+		resetPasswordExpiredAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+	  });
+	  if (updateError) throw updateError;
   
 		const emailContent = generatePasswordResetEmail(user.name, resetToken, email, user.role)
 		setImmediate(async () => {
@@ -377,13 +392,13 @@ const resetPassword = async (req, res) => {
 	const { email, token, newPassword } = req.body
   
 	try {
-	  const user = await User.findOne({
+	  const { data: user, error: findError } = await User.findOne({
 		email,
-		resetPasswordToken: token,
-		resetPasswordExpiredAt: { $gt: Date.now() },
+		resetPasswordToken: token
 	  })
+      if (findError) throw findError;
   
-	  if (!user) {
+	  if (!user || new Date(user.resetPasswordExpiredAt) < new Date()) {
 		return res.status(400).json({
 		  success: false,
 		  message: "Invalid or expired reset token",
@@ -391,10 +406,12 @@ const resetPassword = async (req, res) => {
 	  }
   
 	  const hashPassword = await bcryptjs.hash(newPassword, 12)
-	  user.password = hashPassword
-	  user.resetPasswordToken = undefined
-	  user.resetPasswordExpiredAt = undefined
-	  await user.save()
+	  const { error: updateError } = await User.update(user.id, {
+		password: hashPassword,
+		resetPasswordToken: null,
+		resetPasswordExpiredAt: null
+	  });
+	  if (updateError) throw updateError;
   
 	  return res.status(200).json({
 		success: true,
@@ -414,7 +431,9 @@ const resetPassword = async (req, res) => {
 // get current authenticated user
 const getCurrentUser = async (req, res) => {
 	try {
-		const user = await User.findById(req.user?._id).select("name email role isVerified isActive accountStatus")
+        const userId = req.user?.id || req.user?._id;
+		const { data: user, error: findError } = await User.findById(userId)
+		if (findError) throw findError;
 		if (!user) {
 			return res.status(404).json({
 				success: false,
@@ -425,11 +444,11 @@ const getCurrentUser = async (req, res) => {
 		return res.status(200).json({
 			success: true,
 			user: {
-				id: user._id,
+				id: user.id || user._id,
 				name: user.name,
 				email: user.email,
 				role: user.role,
-				isVerified: user.isVerified,
+				isVerified: user.isVerified || false,
 				isActive: user.isActive,
 				accountStatus: user.accountStatus
 			}

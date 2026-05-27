@@ -1,30 +1,7 @@
-const mongoose = require("mongoose")
+const { getSupabase } = require('../config/db');
 
-const inventoryHistorySchema = new mongoose.Schema(
-  {
-    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    order: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
-    change: { type: Number, required: true }, // positive for restock, negative for deduction
-    reason: {
-      type: String,
-      enum: [
-        "order-placement",
-        "order-cancellation",
-        "manual-adjustment",
-        "return",
-        "correction",
-        "initial-stock",
-      ],
-      required: true,
-    },
-    previousStock: { type: Number },
-    newStock: { type: Number },
-    note: { type: String },
-  },
-  { timestamps: true },
-)
+class InventoryHistory {
+  static get table() { return 'inventory_histories'; }
+}
 
-const InventoryHistory = mongoose.model("InventoryHistory", inventoryHistorySchema)
-
-module.exports = { InventoryHistory }
+module.exports = InventoryHistory;

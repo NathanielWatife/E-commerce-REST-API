@@ -1,47 +1,39 @@
-const mongoose = require("mongoose")
+const { getSupabase } = require('../config/db');
 
-const paymentSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    order: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
-      required: true,
-    },
-    paymentMethod: {
-      type: String,
-      required: true,
-      enum: ["card", "bank-transfer", "ussd", "crypto"],
-    },
-    amount: {
-      type: Number,
-      required: true,
-    },
-    currency: {
-      type: String,
-      required: true,
-      default: "NGN",
-    },
-    status: {
-      type: String,
-      required: true,
-      enum: ["pending", "completed", "failed", "refunded"],
-      default: "pending",
-    },
-    transactionId: {
-      type: String,
-    },
-    paymentDetails: {
-      type: Object,
-    },
-  },
-  { timestamps: true },
-)
+class Payment {
+  static get table() { return 'payments'; }
 
-const Payment = mongoose.model("Payment", paymentSchema)
+  static async findById(id) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).select('*').eq('id', id).single();
+  }
 
-module.exports = { Payment }
+  static async find(query, options = {}) {
+    const supabase = getSupabase();
+    let db = supabase.from(this.table).select('*');
+    for (const [key, value] of Object.entries(query)) {
+      if (typeof value === 'object' && value !== null) {
+        if (value.$lte) db = db.lte(key, value.$lte);
+        if (value.$gte) db = db.gte(key, value.$gte);
+      } else {
+        db = db.eq(key, value);
+      }
+    }
+    if (options.limit) {
+      db = db.limit(options.limit);
+    }
+    return db; // Returns { data, error } array wrapper
+  }
+
+  static async create(data) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).insert([data]).select().single();
+  }
+
+  static async update(id, data) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).update(data).eq('id', id).select().single();
+  }
+}
+
+module.exports = Payment;

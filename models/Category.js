@@ -1,26 +1,7 @@
-const mongoose = require("mongoose");
+const { getSupabase } = require('../config/db');
 
-const categorySchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    image: {
-        type: String
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
-}, { timestamps: true },);
+class Category {
+  static get table() { return 'categories'; }
+}
 
-
-const Category = mongoose.model("Category", categorySchema);
-
-module.exports = { Category };
+module.exports = Category;

@@ -31,10 +31,7 @@ if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_
 
 // CORS Configuration - MUST be before any routes
 const allowedOrigins = [
-  'https://ray-dazzle.vercel.app',
-  'https://ray-dazzle-api.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173',
+  "http://localhost:8080",
 ];
 
 // Add any additional origins from CLIENT_URL env variable
