@@ -1,7 +1,7 @@
 const { Order } = require("../models/Order.js")
 const { Cart } = require("../models/Cart.js")
 const { Product } = require("../models/Product.js")
-const { User } = require("../models/User.js")
+const User = require("../models/User.js")
 const { InventoryHistory } = require("../models/InventoryHistory.js")
 const { validationResult } = require("express-validator")
 const logger = require("../utils/logger.js")

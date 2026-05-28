@@ -1,42 +1,36 @@
-const mongoose = require("mongoose");
+const { getSupabase } = require('../config/db');
 
-const cartItemSchema = new mongoose.Schema({
-	product: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: "Product",
-		required: true,
-	},
+class Cart {
+  static get table() { return 'carts'; }
 
-	quantity: {
-		type: Number,
-		default: 1,
-		min: 1,
-		required: true
-	},
+  static async findById(id) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).select('*').eq('id', id).single();
+  }
 
-	price: {
-		type: Number,
-		required: true
-	}
-});
+  static async findOne(query) {
+    const supabase = getSupabase();
+    let db = supabase.from(this.table).select('*');
+    for (const [key, value] of Object.entries(query)) {
+      db = db.eq(key, value);
+    }
+    return db.maybeSingle();
+  }
 
+  static async create(data) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).insert([data]).select().single();
+  }
 
-const cartSchema = new mongoose.Schema({
-	user: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: "User",
-		required:  true
-	},
+  static async update(id, data) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).update(data).eq('id', id).select().single();
+  }
 
-	items: [cartItemSchema],
+  static async delete(id) {
+    const supabase = getSupabase();
+    return supabase.from(this.table).delete().eq('id', id);
+  }
+}
 
-	totalPrice: {
-		type: Number,
-		required: true,
-		default: 0
-	},
-}, { timestamps: true },);
-
-const Cart =  mongoose.model("Cart", cartSchema);
-
-module.exports = { Cart };
+module.exports = Cart;

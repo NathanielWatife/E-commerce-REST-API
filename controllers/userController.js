@@ -1,26 +1,24 @@
-const { User } = require("../models/User.js")
+const User = require("../models/User.js")
 const bcryptjs = require("bcryptjs")
 const { validationResult } = require("express-validator")
 const logger = require("../utils/logger.js")
+
+// Helper: extract user id from req.user (supports both id and _id)
+const uid = (req) => req.user?.id || req.user?._id;
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error } = await User.findById(uid(req))
+    if (error) throw error;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     return res.status(200).json({
       success: true,
       user: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         avatar: user.avatar,
@@ -29,16 +27,12 @@ const getUserProfile = async (req, res) => {
         shippingAddress: user.shippingAddress,
         role: user.role,
         isVerified: user.isVerified,
-        createdAt: user.createdAt,
+        createdAt: user.created_at,
       },
     })
   } catch (error) {
     logger.error("Get user profile error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -47,39 +41,27 @@ const getUserProfile = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { name, email, phoneNumber, password } = req.body
+    const updates = {}
+    if (name) updates.name = name
+    if (email) updates.email = email
+    if (phoneNumber) updates.phoneNumber = phoneNumber
+    if (password) updates.password = await bcryptjs.hash(password, 12)
 
-    // Update user fields if provided
-    if (name) user.name = name
-    if (email) user.email = email
-    if (phoneNumber) user.phoneNumber = phoneNumber
-    if (password) {
-      user.password = await bcryptjs.hash(password, 12)
-    }
-
-    const updatedUser = await user.save()
+    const { data: updatedUser, error: updateError } = await User.update(user.id, updates)
+    if (updateError) throw updateError;
 
     return res.status(200).json({
       success: true,
       user: {
-        _id: updatedUser._id,
+        id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
         avatar: updatedUser.avatar,
@@ -90,11 +72,7 @@ const updateUserProfile = async (req, res) => {
     })
   } catch (error) {
     logger.error("Update user profile error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -103,41 +81,21 @@ const updateUserProfile = async (req, res) => {
 // @access  Private
 const updateUserAvatar = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { avatar } = req.body
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { avatar })
+    if (updateError) throw updateError;
 
-    // Update avatar
-    user.avatar = avatar
-
-    const updatedUser = await user.save()
-
-    return res.status(200).json({
-      success: true,
-      avatar: updatedUser.avatar,
-    })
+    return res.status(200).json({ success: true, avatar: updatedUser.avatar })
   } catch (error) {
     logger.error("Update user avatar error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -146,63 +104,28 @@ const updateUserAvatar = async (req, res) => {
 // @access  Private
 const addBillingAddress = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { street, city, state, postalCode, country, isDefault } = req.body
+    const newAddress = { id: Date.now().toString(), street, city, state, postalCode, country, isDefault: isDefault || false }
 
-    // Create new address
-    const newAddress = {
-      street,
-      city,
-      state,
-      postalCode,
-      country,
-      isDefault: isDefault || false,
-    }
+    let billingAddress = Array.isArray(user.billingAddress) ? [...user.billingAddress] : []
+    if (isDefault) billingAddress = billingAddress.map(a => ({ ...a, isDefault: false }))
+    billingAddress.push(newAddress)
+    if (billingAddress.length === 1) billingAddress[0].isDefault = true
 
-    // If this address is set as default, update other addresses
-    if (isDefault) {
-      user.billingAddress.forEach((address) => {
-        address.isDefault = false
-      })
-    }
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { billingAddress })
+    if (updateError) throw updateError;
 
-    // Add new address
-    user.billingAddress.push(newAddress)
-
-    // If this is the first address, set it as default
-    if (user.billingAddress.length === 1) {
-      user.billingAddress[0].isDefault = true
-    }
-
-    await user.save()
-
-    return res.status(201).json({
-      success: true,
-      billingAddress: user.billingAddress,
-    })
+    return res.status(201).json({ success: true, billingAddress: updatedUser.billingAddress })
   } catch (error) {
     logger.error("Add billing address error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -211,63 +134,34 @@ const addBillingAddress = async (req, res) => {
 // @access  Private
 const updateBillingAddress = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
     const { street, city, state, postalCode, country, isDefault } = req.body
 
-    // Find address index
-    const addressIndex = user.billingAddress.findIndex((address) => address._id.toString() === addressId)
+    let billingAddress = Array.isArray(user.billingAddress) ? [...user.billingAddress] : []
+    const idx = billingAddress.findIndex(a => String(a.id) === addressId)
+    if (idx === -1) return res.status(404).json({ success: false, message: "Address not found" })
 
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      })
-    }
+    if (street) billingAddress[idx].street = street
+    if (city) billingAddress[idx].city = city
+    if (state) billingAddress[idx].state = state
+    if (postalCode) billingAddress[idx].postalCode = postalCode
+    if (country) billingAddress[idx].country = country
+    if (isDefault) billingAddress = billingAddress.map((a, i) => ({ ...a, isDefault: i === idx }))
 
-    // Update address fields
-    if (street) user.billingAddress[addressIndex].street = street
-    if (city) user.billingAddress[addressIndex].city = city
-    if (state) user.billingAddress[addressIndex].state = state
-    if (postalCode) user.billingAddress[addressIndex].postalCode = postalCode
-    if (country) user.billingAddress[addressIndex].country = country
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { billingAddress })
+    if (updateError) throw updateError;
 
-    // Handle default address
-    if (isDefault) {
-      user.billingAddress.forEach((address, index) => {
-        address.isDefault = index === addressIndex
-      })
-    }
-
-    await user.save()
-
-    return res.status(200).json({
-      success: true,
-      billingAddress: user.billingAddress,
-    })
+    return res.status(200).json({ success: true, billingAddress: updatedUser.billingAddress })
   } catch (error) {
     logger.error("Update billing address error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -276,51 +170,26 @@ const updateBillingAddress = async (req, res) => {
 // @access  Private
 const deleteBillingAddress = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
+    let billingAddress = Array.isArray(user.billingAddress) ? [...user.billingAddress] : []
+    const idx = billingAddress.findIndex(a => String(a.id) === addressId)
+    if (idx === -1) return res.status(404).json({ success: false, message: "Address not found" })
 
-    // Find address index
-    const addressIndex = user.billingAddress.findIndex((address) => address._id.toString() === addressId)
+    const wasDefault = billingAddress[idx].isDefault
+    billingAddress.splice(idx, 1)
+    if (wasDefault && billingAddress.length > 0) billingAddress[0].isDefault = true
 
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      })
-    }
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { billingAddress })
+    if (updateError) throw updateError;
 
-    // Check if this is the default address
-    const isDefault = user.billingAddress[addressIndex].isDefault
-
-    // Remove address
-    user.billingAddress.splice(addressIndex, 1)
-
-    // If removed address was default and there are other addresses, set a new default
-    if (isDefault && user.billingAddress.length > 0) {
-      user.billingAddress[0].isDefault = true
-    }
-
-    await user.save()
-
-    return res.status(200).json({
-      success: true,
-      billingAddress: user.billingAddress,
-    })
+    return res.status(200).json({ success: true, billingAddress: updatedUser.billingAddress })
   } catch (error) {
     logger.error("Delete billing address error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -329,63 +198,28 @@ const deleteBillingAddress = async (req, res) => {
 // @access  Private
 const addShippingAddress = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { street, city, state, postalCode, country, isDefault } = req.body
+    const newAddress = { id: Date.now().toString(), street, city, state, postalCode, country, isDefault: isDefault || false }
 
-    // Create new address
-    const newAddress = {
-      street,
-      city,
-      state,
-      postalCode,
-      country,
-      isDefault: isDefault || false,
-    }
+    let shippingAddress = Array.isArray(user.shippingAddress) ? [...user.shippingAddress] : []
+    if (isDefault) shippingAddress = shippingAddress.map(a => ({ ...a, isDefault: false }))
+    shippingAddress.push(newAddress)
+    if (shippingAddress.length === 1) shippingAddress[0].isDefault = true
 
-    // If this address is set as default, update other addresses
-    if (isDefault) {
-      user.shippingAddress.forEach((address) => {
-        address.isDefault = false
-      })
-    }
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { shippingAddress })
+    if (updateError) throw updateError;
 
-    // Add new address
-    user.shippingAddress.push(newAddress)
-
-    // If this is the first address, set it as default
-    if (user.shippingAddress.length === 1) {
-      user.shippingAddress[0].isDefault = true
-    }
-
-    await user.save()
-
-    return res.status(201).json({
-      success: true,
-      shippingAddress: user.shippingAddress,
-    })
+    return res.status(201).json({ success: true, shippingAddress: updatedUser.shippingAddress })
   } catch (error) {
     logger.error("Add shipping address error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -394,63 +228,34 @@ const addShippingAddress = async (req, res) => {
 // @access  Private
 const updateShippingAddress = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
     const { street, city, state, postalCode, country, isDefault } = req.body
 
-    // Find address index
-    const addressIndex = user.shippingAddress.findIndex((address) => address._id.toString() === addressId)
+    let shippingAddress = Array.isArray(user.shippingAddress) ? [...user.shippingAddress] : []
+    const idx = shippingAddress.findIndex(a => String(a.id) === addressId)
+    if (idx === -1) return res.status(404).json({ success: false, message: "Address not found" })
 
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      })
-    }
+    if (street) shippingAddress[idx].street = street
+    if (city) shippingAddress[idx].city = city
+    if (state) shippingAddress[idx].state = state
+    if (postalCode) shippingAddress[idx].postalCode = postalCode
+    if (country) shippingAddress[idx].country = country
+    if (isDefault) shippingAddress = shippingAddress.map((a, i) => ({ ...a, isDefault: i === idx }))
 
-    // Update address fields
-    if (street) user.shippingAddress[addressIndex].street = street
-    if (city) user.shippingAddress[addressIndex].city = city
-    if (state) user.shippingAddress[addressIndex].state = state
-    if (postalCode) user.shippingAddress[addressIndex].postalCode = postalCode
-    if (country) user.shippingAddress[addressIndex].country = country
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { shippingAddress })
+    if (updateError) throw updateError;
 
-    // Handle default address
-    if (isDefault) {
-      user.shippingAddress.forEach((address, index) => {
-        address.isDefault = index === addressIndex
-      })
-    }
-
-    await user.save()
-
-    return res.status(200).json({
-      success: true,
-      shippingAddress: user.shippingAddress,
-    })
+    return res.status(200).json({ success: true, shippingAddress: updatedUser.shippingAddress })
   } catch (error) {
     logger.error("Update shipping address error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -459,51 +264,26 @@ const updateShippingAddress = async (req, res) => {
 // @access  Private
 const deleteShippingAddress = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(uid(req))
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
+    let shippingAddress = Array.isArray(user.shippingAddress) ? [...user.shippingAddress] : []
+    const idx = shippingAddress.findIndex(a => String(a.id) === addressId)
+    if (idx === -1) return res.status(404).json({ success: false, message: "Address not found" })
 
-    // Find address index
-    const addressIndex = user.shippingAddress.findIndex((address) => address._id.toString() === addressId)
+    const wasDefault = shippingAddress[idx].isDefault
+    shippingAddress.splice(idx, 1)
+    if (wasDefault && shippingAddress.length > 0) shippingAddress[0].isDefault = true
 
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      })
-    }
+    const { data: updatedUser, error: updateError } = await User.update(user.id, { shippingAddress })
+    if (updateError) throw updateError;
 
-    // Check if this is the default address
-    const isDefault = user.shippingAddress[addressIndex].isDefault
-
-    // Remove address
-    user.shippingAddress.splice(addressIndex, 1)
-
-    // If removed address was default and there are other addresses, set a new default
-    if (isDefault && user.shippingAddress.length > 0) {
-      user.shippingAddress[0].isDefault = true
-    }
-
-    await user.save()
-
-    return res.status(200).json({
-      success: true,
-      shippingAddress: user.shippingAddress,
-    })
+    return res.status(200).json({ success: true, shippingAddress: updatedUser.shippingAddress })
   } catch (error) {
     logger.error("Delete shipping address error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
@@ -514,141 +294,91 @@ const getUsers = async (req, res) => {
   try {
     const pageSize = Number(req.query.pageSize) || 10
     const page = Number(req.query.page) || 1
+    const offset = pageSize * (page - 1)
 
     const count = await User.countDocuments({})
-    const users = await User.find({})
-      .select("-password")
-      .sort({ createdAt: -1 })
-      .limit(pageSize)
-      .skip(pageSize * (page - 1))
+    const { data: users, error } = await User.find({}, { limit: pageSize, offset, sortField: 'created_at', sortAsc: false })
+    if (error) throw error;
 
-    return res.status(200).json({
-      success: true,
-      users,
-      page,
-      pages: Math.ceil(count / pageSize),
-      count,
-    })
+    // Strip passwords
+    const safeUsers = (users || []).map(({ password, ...u }) => u)
+
+    return res.status(200).json({ success: true, users: safeUsers, page, pages: Math.ceil(count / pageSize), count })
   } catch (error) {
     logger.error("Get all users error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
-
-// get user by ID
+// @desc    Get user by ID (admin)
+// @route   GET /api/users/:id
+// @access  Private/Admin
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password")
+    const { data: user, error } = await User.findById(req.params.id)
+    if (error) throw error;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
-
-    return res.status(200).json({
-      success: true,
-      user,
-    })
+    const { password, ...safeUser } = user
+    return res.status(200).json({ success: true, user: safeUser })
   } catch (error) {
     logger.error("Get user by ID error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
-// update user
+// @desc    Update user (admin)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
 const updateUser = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(),
-    })
-  }
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const user = await User.findById(req.params.id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
+    const { data: user, error: findError } = await User.findById(req.params.id)
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { name, email, role, isVerified } = req.body
+    const updates = {}
+    if (name) updates.name = name
+    if (email) updates.email = email
+    if (role) updates.role = role
+    if (isVerified !== undefined) updates.isVerified = isVerified
 
-    // Update user fields if provided
-    if (name) user.name = name
-    if (email) user.email = email
-    if (role) user.role = role
-    if (isVerified !== undefined) user.isVerified = isVerified
-
-    const updatedUser = await user.save()
+    const { data: updatedUser, error: updateError } = await User.update(user.id, updates)
+    if (updateError) throw updateError;
 
     return res.status(200).json({
       success: true,
-      user: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        isVerified: updatedUser.isVerified,
-      },
+      user: { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, isVerified: updatedUser.isVerified },
     })
   } catch (error) {
     logger.error("Update user error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 
-// delete user account
+// @desc    Delete user (admin)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
+    const { data: user, error: findError } = await User.findById(req.params.id)
+    if (findError) throw findError;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
+    if (user.id === uid(req)) {
+      return res.status(400).json({ success: false, message: "Cannot delete your own account" })
     }
 
-    // Prevent admin from deleting themselves
-    if (user._id.toString() === req.user._id.toString()) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot delete your own account",
-      })
-    }
+    const { error: deleteError } = await User.delete(user.id)
+    if (deleteError) throw deleteError;
 
-    await user.deleteOne()
-
-    return res.status(200).json({
-      success: true,
-      message: "User removed",
-    })
+    return res.status(200).json({ success: true, message: "User removed" })
   } catch (error) {
     logger.error("Delete user error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV ? error.message : undefined,
-    })
+    return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined })
   }
 }
 

@@ -1,5 +1,5 @@
 const bcryptjs = require('bcryptjs');
-const { User } = require('../models/User.js');
+const User = require('../models/User.js');
 const logger = require('../utils/logger.js');
 
 const initSuperAdmin = async () => {
@@ -14,12 +14,12 @@ const initSuperAdmin = async () => {
       return;
     }
 
-    const existing = await User.findOne({ email: EMAIL }).select('+password');
+    const { data: existing } = await User.findOne({ email: EMAIL });
     
     if (!existing) {
       // Create new super admin
       const hash = await bcryptjs.hash(PASSWORD, 12);
-      const user = new User({
+      await User.create({
         name: NAME,
         email: EMAIL.toLowerCase(),
         password: hash,
@@ -28,46 +28,46 @@ const initSuperAdmin = async () => {
         isActive: true,
         accountStatus: 'active',
       });
-      await user.save();
       
       logger.info(`✓ Super admin created successfully: ${EMAIL}`);
     } else {
       // Update existing user if needed
       let changed = false;
       const changes = [];
+      const updateData = {};
 
       if (existing.role !== 'super-admin') {
-        existing.role = 'super-admin';
+        updateData.role = 'super-admin';
         changed = true;
         changes.push('role → super-admin');
       }
 
       if (RESET) {
-        existing.password = await bcryptjs.hash(PASSWORD, 12);
+        updateData.password = await bcryptjs.hash(PASSWORD, 12);
         changed = true;
         changes.push('password reset');
       }
 
       if (!existing.isVerified) {
-        existing.isVerified = true;
+        updateData.isVerified = true;
         changed = true;
         changes.push('verified');
       }
 
       if (!existing.isActive) {
-        existing.isActive = true;
+        updateData.isActive = true;
         changed = true;
         changes.push('activated');
       }
 
       if (existing.accountStatus !== 'active') {
-        existing.accountStatus = 'active';
+        updateData.accountStatus = 'active';
         changed = true;
         changes.push('status → active');
       }
 
       if (changed) {
-        await existing.save();
+        await User.update(existing.id, updateData);
         logger.info(`✓ Super admin updated: ${changes.join(', ')} [${EMAIL}]`);
       } else {
         logger.info(`✓ Super admin already configured: ${EMAIL}`);

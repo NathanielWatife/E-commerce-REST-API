@@ -1,6 +1,6 @@
 const { body } = require("express-validator")
 
-const validateSignup = [
+const validateRegister = [
   body("name")
     .notEmpty()
     .withMessage("Name is required")
@@ -86,7 +86,7 @@ const validateBulkActions = [
       return true;
     }),
   body("userIds.*")
-    .isMongoId()
+    .isUUID()
     .withMessage("Invalid user ID"),
 ];
 
@@ -110,7 +110,7 @@ const validateAdminUserUpdate = [
 ];
 
 module.exports = {
-  validateSignup,
+  validateRegister,
   validateLogin,
   validateVerifyEmail,
   validateResendVerification,

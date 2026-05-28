@@ -1,7 +1,7 @@
 const logger = require('../utils/logger.js');
-const { Payment } = require('../models/Payment.js');
-const { Order } = require('../models/Order.js');
-const { User } = require('../models/User.js');
+const Payment = require('../models/Payment.js');
+const Order = require('../models/Order.js');
+const User = require('../models/User.js');
 const { sendEmail, generatePaymentConfirmationEmail } = require('../utils/sendEmail.js');
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || '';
@@ -122,12 +122,16 @@ function startPaymentReconciler() {
     const olderThan = new Date(now - minAgeMs);
 
     try {
-      const pendings = await Payment.find({ status: 'pending', createdAt: { $lte: olderThan } }).limit(50);
-      for (const p of pendings) {
+      const { data: pendings, error: fetchErr } = await Payment.find(
+        { status: 'pending', createdAt: { $lte: olderThan.toISOString() } },
+        { limit: 50 }
+      );
+      if (fetchErr) throw fetchErr;
+
+      for (const p of pendings || []) {
         const ok = await reconcileOne(p);
         if (!ok && now - new Date(p.createdAt).getTime() > failAfterMs) {
-          p.status = 'failed';
-          await p.save();
+          await Payment.update(p.id || p._id, { status: 'failed' });
         }
       }
     } catch (err) {
