@@ -1,4 +1,4 @@
-const { User } = require("../models/User.js");
+const User = require("../models/User.js");
 const bcryptjs = require("bcryptjs");
 const { generateTokenAndSetCookie } = require("../utils/generateTokenAndSetCookie.js");
 const { validationResult } = require("express-validator");
@@ -23,8 +23,8 @@ const getClientInfo = (req) => {
 }
 
 
-// user signup
-const signup = async (req, res) => {
+// user registration
+const register = async (req, res) => {
 	const errors = validationResult(req);
 	if(!errors.isEmpty()) {
 		return res.status(400).json({
@@ -97,7 +97,7 @@ const signup = async (req, res) => {
 			debug: process.env.NODE_ENV !== "production" ? { verificationToken } : undefined,
 		})
 	} catch (error) {
-		logger.error("Signup error:", error)
+		logger.error("Registration error:", error)
 		return res.status(500).json({
 			success: false,
 			message: "Server error",
@@ -464,7 +464,7 @@ const getCurrentUser = async (req, res) => {
 }
 
 module.exports = {
-	signup,
+	register,
 	login,
 	verifyEmail,
 	resendVerificationEmail,

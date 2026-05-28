@@ -31,7 +31,7 @@ if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_
 
 // CORS Configuration - MUST be before any routes
 const allowedOrigins = [
-  "http://localhost:8080",
+  'http://localhost:3000'
 ];
 
 // Add any additional origins from CLIENT_URL env variable

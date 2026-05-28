@@ -2,10 +2,11 @@ const { getSupabase } = require('../config/db');
 
 class User {
   static get table() { return 'users'; }
-  
+
   static async findById(id) {
     const supabase = getSupabase();
-    return supabase.from(this.table).select('*').eq('id', id).single();
+    const { data, error } = await supabase.from(this.table).select('*').eq('id', id).single();
+    return { data, error };
   }
 
   static async findOne(query) {
@@ -15,6 +16,47 @@ class User {
       db = db.eq(key, value);
     }
     return db.maybeSingle();
+  }
+
+  static async find(query = {}, options = {}) {
+    const supabase = getSupabase();
+    let db = supabase.from(this.table).select('*');
+    for (const [key, value] of Object.entries(query)) {
+      if (value && typeof value === 'object') {
+        if (value.$regex) db = db.ilike(key, `%${value.$regex}%`);
+        else if (value.$in) db = db.in(key, value.$in);
+        else if (value.$ne) db = db.neq(key, value.$ne);
+      } else {
+        db = db.eq(key, value);
+      }
+    }
+    if (options.sortField) {
+      db = db.order(options.sortField, { ascending: options.sortAsc ?? false });
+    } else {
+      db = db.order('created_at', { ascending: false });
+    }
+    if (options.limit) db = db.limit(options.limit);
+    if (options.offset) db = db.range(options.offset, options.offset + (options.limit || 1000) - 1);
+    const result = await db;
+    if (result.error) return result;
+    return { data: result.data, error: null };
+  }
+
+  static async countDocuments(query = {}) {
+    const supabase = getSupabase();
+    let db = supabase.from(this.table).select('*', { count: 'exact', head: true });
+    for (const [key, value] of Object.entries(query)) {
+      if (value && typeof value === 'object') {
+        if (value.$in) db = db.in(key, value.$in);
+        else if (value.$ne) db = db.neq(key, value.$ne);
+        else if (value.$gte) db = db.gte(key, value.$gte);
+      } else {
+        db = db.eq(key, value);
+      }
+    }
+    const { count, error } = await db;
+    if (error) throw error;
+    return count || 0;
   }
 
   static async create(data) {
@@ -27,9 +69,37 @@ class User {
     return supabase.from(this.table).update(data).eq('id', id).select().single();
   }
 
+  static async updateMany(query, data) {
+    const supabase = getSupabase();
+    let db = supabase.from(this.table).update(data);
+    for (const [key, value] of Object.entries(query)) {
+      if (value && typeof value === 'object') {
+        if (value.$in) db = db.in(key, value.$in);
+        else if (value.$ne) db = db.neq(key, value.$ne);
+      } else {
+        db = db.eq(key, value);
+      }
+    }
+    return db.select();
+  }
+
   static async delete(id) {
     const supabase = getSupabase();
     return supabase.from(this.table).delete().eq('id', id);
+  }
+
+  static async deleteMany(query) {
+    const supabase = getSupabase();
+    let db = supabase.from(this.table).delete();
+    for (const [key, value] of Object.entries(query)) {
+      if (value && typeof value === 'object') {
+        if (value.$in) db = db.in(key, value.$in);
+        else if (value.$ne) db = db.neq(key, value.$ne);
+      } else {
+        db = db.eq(key, value);
+      }
+    }
+    return db;
   }
 }
 

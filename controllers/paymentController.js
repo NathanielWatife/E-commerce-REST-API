@@ -1,6 +1,6 @@
 const { Payment } = require("../models/Payment.js")
 const { Order } = require("../models/Order.js")
-const { User } = require("../models/User.js")
+const User = require("../models/User.js")
 const { validationResult } = require("express-validator")
 const { sendEmail, generatePaymentConfirmationEmail } = require("../utils/sendEmail.js")
 const { WebhookEvent } = require("../models/WebhookEvent.js")
