@@ -17,15 +17,15 @@ const getDashBoardStatistics = async (req, res) => {
         ]);
 
         // Recent orders
-        const { data: recentOrders } = await Order.find({}, { limit: 5 });
+        const recentOrders = await Order.find({}).sort({ createdAt: -1 }).limit(5).lean();
 
         // Revenue from paid orders
-        const { data: paidOrders } = await Order.find({ isPaid: true });
+        const paidOrders = await Order.find({ isPaid: true }).lean();
         const totalRevenue = (paidOrders || []).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
         // New users this month
-        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-        const newUsersThisMonth = await User.countDocuments({ created_at: { $gte: startOfMonth } });
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfMonth } });
 
         return res.status(200).json({
             success: true,
@@ -50,26 +50,22 @@ const getAdminUsers = async (req, res) => {
         const role = req.query.role || "";
         const status = req.query.status || "";
         const verified = req.query.verified;
-        const sortBy = req.query.sort || "created_at";
+        const sortBy = req.query.sort || "createdAt";
         const sortAsc = req.query.order === "asc";
 
         const query = {};
         if (role) query.role = role;
         if (status) query.accountStatus = status;
         if (verified !== undefined) query.isVerified = verified === "true";
+        if (search) {
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            query.$or = [{ name: { $regex: escaped, $options: 'i' } }, { email: { $regex: escaped, $options: 'i' } }];
+        }
 
-        // Supabase full-text/ilike search across name & email
-        const supabase = require('../config/db').getSupabase();
-        let db = supabase.from('users').select('*', { count: 'exact' });
-        if (role) db = db.eq('role', role);
-        if (status) db = db.eq('accountStatus', status);
-        if (verified !== undefined) db = db.eq('isVerified', verified === 'true');
-        if (search) db = db.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
-        db = db.order(sortBy, { ascending: sortAsc });
-        db = db.range(offset, offset + pageSize - 1);
-
-        const { data: users, count, error } = await db;
-        if (error) throw error;
+        const [users, count] = await Promise.all([
+            User.find(query).sort({ [sortBy]: sortAsc ? 1 : -1 }).skip(offset).limit(pageSize).lean(),
+            User.countDocuments(query),
+        ]);
 
         const safeUsers = (users || []).map(({ password, ...u }) => u);
 
@@ -96,8 +92,7 @@ const updateAdminUser = async (req, res) => {
     if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
     try {
-        const { data: user, error: findError } = await User.findById(req.params.id);
-        if (findError) throw findError;
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
         if (user.role === "super-admin" && req.user.role !== "super-admin") {
@@ -119,8 +114,7 @@ const updateAdminUser = async (req, res) => {
         }
         if (isVerified !== undefined) updates.isVerified = isVerified;
 
-        const { data: updatedUser, error: updateError } = await User.update(user.id, updates);
-        if (updateError) throw updateError;
+        const updatedUser = await User.findByIdAndUpdate(user.id, updates, { new: true });
 
         return res.status(200).json({
             success: true,
@@ -133,7 +127,7 @@ const updateAdminUser = async (req, res) => {
                 isActive: updatedUser.isActive,
                 accountStatus: updatedUser.accountStatus,
                 lastLogin: updatedUser.lastLogin,
-                created_at: updatedUser.created_at,
+                created_at: updatedUser.createdAt,
             }
         });
     } catch (error) {
@@ -151,12 +145,11 @@ const bulkUserActions = async (req, res) => {
     try {
         if (action === "delete") {
             // Prevent deleting super-admins
-            const supabase = require('../config/db').getSupabase();
-            const { data: superAdmins } = await supabase.from('users').select('id').in('id', userIds).eq('role', 'super-admin');
+            const superAdmins = await User.find({ _id: { $in: userIds }, role: 'super-admin' }).select('_id').lean();
             if (superAdmins && superAdmins.length > 0) {
                 return res.status(400).json({ success: false, message: "Cannot delete super-admin accounts" });
             }
-            await supabase.from('users').delete().in('id', userIds).neq('role', 'super-admin');
+            await User.deleteMany({ _id: { $in: userIds }, role: { $ne: 'super-admin' } });
             return res.status(200).json({ success: true, message: "Users deleted successfully" });
         }
 
@@ -169,11 +162,9 @@ const bulkUserActions = async (req, res) => {
         const update = updateMap[action];
         if (!update) return res.status(400).json({ success: false, message: "Invalid action" });
 
-        const supabase = require('../config/db').getSupabase();
-        const { data: result, error } = await supabase.from('users').update(update).in('id', userIds).neq('role', 'super-admin').select();
-        if (error) throw error;
+        const result = await User.updateMany({ _id: { $in: userIds }, role: { $ne: 'super-admin' } }, { $set: update });
 
-        return res.status(200).json({ success: true, message: `${action} applied successfully`, updatedCount: result?.length || 0 });
+        return res.status(200).json({ success: true, message: `${action} applied successfully`, updatedCount: result?.modifiedCount || 0 });
     } catch (error) {
         logger.error("Bulk user actions error:", error);
         return res.status(500).json({ success: false, message: "Server error", error: process.env.NODE_ENV ? error.message : undefined });
@@ -182,8 +173,7 @@ const bulkUserActions = async (req, res) => {
 
 const getUserActivityLogs = async (req, res) => {
     try {
-        const { data: user, error } = await User.findById(req.params.id);
-        if (error) throw error;
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
         const loginHistory = Array.isArray(user.loginHistory) ? user.loginHistory.slice(-20).reverse() : [];
@@ -200,8 +190,7 @@ const getUserActivityLogs = async (req, res) => {
 
 const exportUserData = async (req, res) => {
     try {
-        const { data: users, error } = await User.find({}, { sortField: 'created_at', sortAsc: false });
-        if (error) throw error;
+        const users = await User.find({}).sort({ createdAt: -1 }).lean();
 
         if (!users || users.length === 0) return res.status(200).send('');
 
@@ -213,7 +202,7 @@ const exportUserData = async (req, res) => {
             Active: u.isActive ? "Yes" : "No",
             Status: u.accountStatus,
             'Last Login': u.lastLogin || '',
-            'Created At': u.created_at
+            'Created At': u.createdAt
         }));
 
         res.setHeader('Content-Type', 'text/csv');
@@ -232,19 +221,17 @@ const getWebhookEvents = async (req, res) => {
         const page = Math.max(Number(req.query.page) || 1, 1);
         const offset = pageSize * (page - 1);
 
-        const supabase = require('../config/db').getSupabase();
-        let db = supabase.from('webhook_events').select('*', { count: 'exact' });
+        const query = {};
+        if (req.query.provider) query.provider = req.query.provider;
+        if (req.query.status) query.status = req.query.status;
+        if (req.query.reference) query.reference = req.query.reference;
+        if (req.query.handled !== undefined) query.handled = req.query.handled === 'true';
+        if (req.query.q) query.eventId = { $regex: req.query.q, $options: 'i' };
 
-        if (req.query.provider) db = db.eq('provider', req.query.provider);
-        if (req.query.status) db = db.eq('status', req.query.status);
-        if (req.query.reference) db = db.eq('reference', req.query.reference);
-        if (req.query.handled !== undefined) db = db.eq('handled', req.query.handled === 'true');
-        if (req.query.q) db = db.ilike('event_id', `%${req.query.q}%`);
-
-        db = db.order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-
-        const { data: events, count, error } = await db;
-        if (error) throw error;
+        const [events, count] = await Promise.all([
+            WebhookEvent.find(query).sort({ createdAt: -1 }).skip(offset).limit(pageSize).lean(),
+            WebhookEvent.countDocuments(query),
+        ]);
 
         return res.status(200).json({
             success: true,

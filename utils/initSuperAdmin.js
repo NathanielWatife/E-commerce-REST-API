@@ -14,7 +14,7 @@ const initSuperAdmin = async () => {
       return;
     }
 
-    const { data: existing } = await User.findOne({ email: EMAIL });
+    const existing = await User.findOne({ email: EMAIL });
     
     if (!existing) {
       // Create new super admin
@@ -67,7 +67,7 @@ const initSuperAdmin = async () => {
       }
 
       if (changed) {
-        await User.update(existing.id, updateData);
+        await User.findByIdAndUpdate(existing.id, updateData);
         logger.info(`✓ Super admin updated: ${changes.join(', ')} [${EMAIL}]`);
       } else {
         logger.info(`✓ Super admin already configured: ${EMAIL}`);

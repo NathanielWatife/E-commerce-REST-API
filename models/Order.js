@@ -1,65 +1,58 @@
-const { getSupabase } = require('../config/db');
+const mongoose = require('mongoose');
 
-class Order {
-  static get table() { return 'orders'; }
+const orderItemSchema = new mongoose.Schema(
+  {
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    name: { type: String, required: true },
+    quantity: { type: Number, required: true, min: 1 },
+    image: { type: String, default: '' },
+    price: { type: Number, required: true, default: 0 },
+  },
+  { _id: true }
+);
 
-  static async findById(id) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).select('*').eq('id', id).single();
-  }
+const statusHistorySchema = new mongoose.Schema(
+  {
+    status: { type: String, required: true },
+    note: { type: String, default: '' },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
 
-  static async findOne(query) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*');
-    for (const [key, value] of Object.entries(query)) {
-      db = db.eq(key, value);
-    }
-    return db.maybeSingle();
-  }
+const orderSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    orderItems: { type: [orderItemSchema], default: [] },
+    shippingAddress: { type: mongoose.Schema.Types.Mixed, default: {} },
+    billingAddress: { type: mongoose.Schema.Types.Mixed, default: {} },
+    paymentMethod: { type: String, default: 'Paystack' },
+    paymentResult: { type: mongoose.Schema.Types.Mixed, default: {} },
+    itemsPrice: { type: Number, required: true, default: 0 },
+    taxPrice: { type: Number, required: true, default: 0 },
+    shippingPrice: { type: Number, required: true, default: 0 },
+    totalPrice: { type: Number, required: true, default: 0 },
+    isPaid: { type: Boolean, default: false },
+    paidAt: { type: Date, default: null },
+    isDelivered: { type: Boolean, default: false },
+    deliveredAt: { type: Date, default: null },
+    status: {
+      type: String,
+      enum: ['pending', 'awaiting_payment_review', 'processing', 'shipped', 'delivered', 'cancelled'],
+      default: 'pending',
+    },
+    statusHistory: { type: [statusHistorySchema], default: [] },
+    shippedAt: { type: Date, default: null },
+    shippingCarrier: { type: String, default: '' },
+    trackingNumber: { type: String, default: '' },
+    trackingUrl: { type: String, default: '' },
+    estimatedDelivery: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
 
-  static async find(query = {}, options = {}) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*');
-    for (const [key, value] of Object.entries(query)) {
-      if (value && typeof value === 'object' && value.$in) {
-        db = db.in(key, value.$in);
-      } else {
-        db = db.eq(key, value);
-      }
-    }
-    db = db.order('created_at', { ascending: false });
-    if (options.limit) db = db.limit(options.limit);
-    if (options.offset) db = db.range(options.offset, options.offset + (options.limit || 1000) - 1);
-    const result = await db;
-    if (result.error) return result;
-    return { data: result.data, error: null };
-  }
-
-  static async countDocuments(query = {}) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*', { count: 'exact', head: true });
-    for (const [key, value] of Object.entries(query)) {
-      db = db.eq(key, value);
-    }
-    const { count, error } = await db;
-    if (error) throw error;
-    return count || 0;
-  }
-
-  static async create(data) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).insert([data]).select().single();
-  }
-
-  static async update(id, data) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).update(data).eq('id', id).select().single();
-  }
-
-  static async delete(id) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).delete().eq('id', id);
-  }
-}
+const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 
 module.exports = Order;
+module.exports.Order = Order;

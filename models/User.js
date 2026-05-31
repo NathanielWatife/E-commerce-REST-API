@@ -1,106 +1,62 @@
-const { getSupabase } = require('../config/db');
+const mongoose = require('mongoose');
 
-class User {
-  static get table() { return 'users'; }
+const addressSchema = new mongoose.Schema(
+  {
+    id: { type: String, default: () => Date.now().toString() },
+    street: String,
+    city: String,
+    state: String,
+    postalCode: String,
+    country: String,
+    isDefault: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
 
-  static async findById(id) {
-    const supabase = getSupabase();
-    const { data, error } = await supabase.from(this.table).select('*').eq('id', id).single();
-    return { data, error };
-  }
+const loginHistorySchema = new mongoose.Schema(
+  {
+    ip: String,
+    device: String,
+    time: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
 
-  static async findOne(query) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*');
-    for (const [key, value] of Object.entries(query)) {
-      db = db.eq(key, value);
-    }
-    return db.maybeSingle();
-  }
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, required: true },
+    avatar: { type: String, default: '' },
+    phoneNumber: { type: String, default: '' },
+    billingAddress: { type: [addressSchema], default: [] },
+    shippingAddress: { type: [addressSchema], default: [] },
+    role: { type: String, enum: ['user', 'admin', 'super-admin'], default: 'user' },
+    isVerified: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
+    accountStatus: { type: String, enum: ['active', 'suspended', 'deactivated'], default: 'active' },
+    verificationToken: { type: String, default: null },
+    verificationTokenExpiredAt: { type: Date, default: null },
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpiredAt: { type: Date, default: null },
+    loginHistory: { type: [loginHistorySchema], default: [] },
+    lastLogin: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
 
-  static async find(query = {}, options = {}) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*');
-    for (const [key, value] of Object.entries(query)) {
-      if (value && typeof value === 'object') {
-        if (value.$regex) db = db.ilike(key, `%${value.$regex}%`);
-        else if (value.$in) db = db.in(key, value.$in);
-        else if (value.$ne) db = db.neq(key, value.$ne);
-      } else {
-        db = db.eq(key, value);
-      }
-    }
-    if (options.sortField) {
-      db = db.order(options.sortField, { ascending: options.sortAsc ?? false });
-    } else {
-      db = db.order('created_at', { ascending: false });
-    }
-    if (options.limit) db = db.limit(options.limit);
-    if (options.offset) db = db.range(options.offset, options.offset + (options.limit || 1000) - 1);
-    const result = await db;
-    if (result.error) return result;
-    return { data: result.data, error: null };
-  }
+userSchema.virtual('created_at').get(function createdAtAlias() {
+  return this.createdAt;
+});
 
-  static async countDocuments(query = {}) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*', { count: 'exact', head: true });
-    for (const [key, value] of Object.entries(query)) {
-      if (value && typeof value === 'object') {
-        if (value.$in) db = db.in(key, value.$in);
-        else if (value.$ne) db = db.neq(key, value.$ne);
-        else if (value.$gte) db = db.gte(key, value.$gte);
-      } else {
-        db = db.eq(key, value);
-      }
-    }
-    const { count, error } = await db;
-    if (error) throw error;
-    return count || 0;
-  }
+userSchema.virtual('updated_at').get(function updatedAtAlias() {
+  return this.updatedAt;
+});
 
-  static async create(data) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).insert([data]).select().single();
-  }
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
 
-  static async update(id, data) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).update(data).eq('id', id).select().single();
-  }
-
-  static async updateMany(query, data) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).update(data);
-    for (const [key, value] of Object.entries(query)) {
-      if (value && typeof value === 'object') {
-        if (value.$in) db = db.in(key, value.$in);
-        else if (value.$ne) db = db.neq(key, value.$ne);
-      } else {
-        db = db.eq(key, value);
-      }
-    }
-    return db.select();
-  }
-
-  static async delete(id) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).delete().eq('id', id);
-  }
-
-  static async deleteMany(query) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).delete();
-    for (const [key, value] of Object.entries(query)) {
-      if (value && typeof value === 'object') {
-        if (value.$in) db = db.in(key, value.$in);
-        else if (value.$ne) db = db.neq(key, value.$ne);
-      } else {
-        db = db.eq(key, value);
-      }
-    }
-    return db;
-  }
-}
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 module.exports = User;
+module.exports.User = User;

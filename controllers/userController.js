@@ -11,8 +11,7 @@ const uid = (req) => req.user?.id || req.user?._id;
 // @access  Private
 const getUserProfile = async (req, res) => {
   try {
-    const { data: user, error } = await User.findById(uid(req))
-    if (error) throw error;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     return res.status(200).json({
@@ -27,7 +26,7 @@ const getUserProfile = async (req, res) => {
         shippingAddress: user.shippingAddress,
         role: user.role,
         isVerified: user.isVerified,
-        createdAt: user.created_at,
+        createdAt: user.createdAt,
       },
     })
   } catch (error) {
@@ -44,8 +43,7 @@ const updateUserProfile = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { name, email, phoneNumber, password } = req.body
@@ -55,8 +53,7 @@ const updateUserProfile = async (req, res) => {
     if (phoneNumber) updates.phoneNumber = phoneNumber
     if (password) updates.password = await bcryptjs.hash(password, 12)
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, updates)
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, updates, { new: true })
 
     return res.status(200).json({
       success: true,
@@ -84,13 +81,11 @@ const updateUserAvatar = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { avatar } = req.body
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { avatar })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { avatar }, { new: true })
 
     return res.status(200).json({ success: true, avatar: updatedUser.avatar })
   } catch (error) {
@@ -107,8 +102,7 @@ const addBillingAddress = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { street, city, state, postalCode, country, isDefault } = req.body
@@ -119,8 +113,7 @@ const addBillingAddress = async (req, res) => {
     billingAddress.push(newAddress)
     if (billingAddress.length === 1) billingAddress[0].isDefault = true
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { billingAddress })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { billingAddress }, { new: true })
 
     return res.status(201).json({ success: true, billingAddress: updatedUser.billingAddress })
   } catch (error) {
@@ -137,8 +130,7 @@ const updateBillingAddress = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
@@ -155,8 +147,7 @@ const updateBillingAddress = async (req, res) => {
     if (country) billingAddress[idx].country = country
     if (isDefault) billingAddress = billingAddress.map((a, i) => ({ ...a, isDefault: i === idx }))
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { billingAddress })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { billingAddress }, { new: true })
 
     return res.status(200).json({ success: true, billingAddress: updatedUser.billingAddress })
   } catch (error) {
@@ -170,8 +161,7 @@ const updateBillingAddress = async (req, res) => {
 // @access  Private
 const deleteBillingAddress = async (req, res) => {
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
@@ -183,8 +173,7 @@ const deleteBillingAddress = async (req, res) => {
     billingAddress.splice(idx, 1)
     if (wasDefault && billingAddress.length > 0) billingAddress[0].isDefault = true
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { billingAddress })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { billingAddress }, { new: true })
 
     return res.status(200).json({ success: true, billingAddress: updatedUser.billingAddress })
   } catch (error) {
@@ -201,8 +190,7 @@ const addShippingAddress = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { street, city, state, postalCode, country, isDefault } = req.body
@@ -213,8 +201,7 @@ const addShippingAddress = async (req, res) => {
     shippingAddress.push(newAddress)
     if (shippingAddress.length === 1) shippingAddress[0].isDefault = true
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { shippingAddress })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { shippingAddress }, { new: true })
 
     return res.status(201).json({ success: true, shippingAddress: updatedUser.shippingAddress })
   } catch (error) {
@@ -231,8 +218,7 @@ const updateShippingAddress = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
@@ -249,8 +235,7 @@ const updateShippingAddress = async (req, res) => {
     if (country) shippingAddress[idx].country = country
     if (isDefault) shippingAddress = shippingAddress.map((a, i) => ({ ...a, isDefault: i === idx }))
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { shippingAddress })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { shippingAddress }, { new: true })
 
     return res.status(200).json({ success: true, shippingAddress: updatedUser.shippingAddress })
   } catch (error) {
@@ -264,8 +249,7 @@ const updateShippingAddress = async (req, res) => {
 // @access  Private
 const deleteShippingAddress = async (req, res) => {
   try {
-    const { data: user, error: findError } = await User.findById(uid(req))
-    if (findError) throw findError;
+    const user = await User.findById(uid(req))
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { addressId } = req.params
@@ -277,8 +261,7 @@ const deleteShippingAddress = async (req, res) => {
     shippingAddress.splice(idx, 1)
     if (wasDefault && shippingAddress.length > 0) shippingAddress[0].isDefault = true
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, { shippingAddress })
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, { shippingAddress }, { new: true })
 
     return res.status(200).json({ success: true, shippingAddress: updatedUser.shippingAddress })
   } catch (error) {
@@ -297,8 +280,11 @@ const getUsers = async (req, res) => {
     const offset = pageSize * (page - 1)
 
     const count = await User.countDocuments({})
-    const { data: users, error } = await User.find({}, { limit: pageSize, offset, sortField: 'created_at', sortAsc: false })
-    if (error) throw error;
+    const users = await User.find({})
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(pageSize)
+      .lean()
 
     // Strip passwords
     const safeUsers = (users || []).map(({ password, ...u }) => u)
@@ -315,8 +301,7 @@ const getUsers = async (req, res) => {
 // @access  Private/Admin
 const getUserById = async (req, res) => {
   try {
-    const { data: user, error } = await User.findById(req.params.id)
-    if (error) throw error;
+    const user = await User.findById(req.params.id).lean()
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { password, ...safeUser } = user
@@ -335,8 +320,7 @@ const updateUser = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() })
 
   try {
-    const { data: user, error: findError } = await User.findById(req.params.id)
-    if (findError) throw findError;
+    const user = await User.findById(req.params.id)
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     const { name, email, role, isVerified } = req.body
@@ -346,8 +330,7 @@ const updateUser = async (req, res) => {
     if (role) updates.role = role
     if (isVerified !== undefined) updates.isVerified = isVerified
 
-    const { data: updatedUser, error: updateError } = await User.update(user.id, updates)
-    if (updateError) throw updateError;
+    const updatedUser = await User.findByIdAndUpdate(user.id, updates, { new: true })
 
     return res.status(200).json({
       success: true,
@@ -364,16 +347,14 @@ const updateUser = async (req, res) => {
 // @access  Private/Admin
 const deleteUser = async (req, res) => {
   try {
-    const { data: user, error: findError } = await User.findById(req.params.id)
-    if (findError) throw findError;
+    const user = await User.findById(req.params.id)
     if (!user) return res.status(404).json({ success: false, message: "User not found" })
 
     if (user.id === uid(req)) {
       return res.status(400).json({ success: false, message: "Cannot delete your own account" })
     }
 
-    const { error: deleteError } = await User.delete(user.id)
-    if (deleteError) throw deleteError;
+    await User.findByIdAndDelete(user.id)
 
     return res.status(200).json({ success: true, message: "User removed" })
   } catch (error) {

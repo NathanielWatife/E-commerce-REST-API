@@ -30,8 +30,7 @@ const protect = async (req, res, next) => {
   logger.debug("Token decoded successfully")
 
     // Get user from the token
-  const { data: user, error: findError } = await User.findById(decoded.userId)
-  if (findError) throw findError;
+  const user = await User.findById(decoded.userId)
   logger.debug(`User found: ${user ? 'Yes' : 'No'}`)
 
     if (!user) {

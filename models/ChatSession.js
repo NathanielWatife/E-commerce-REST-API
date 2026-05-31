@@ -1,49 +1,25 @@
-const { getSupabase } = require('../config/db');
+const mongoose = require('mongoose');
 
-class ChatSession {
-  static get table() { return 'chat_sessions'; }
+const chatMessageSchema = new mongoose.Schema(
+  {
+    role: { type: String, enum: ['user', 'assistant', 'system'], required: true },
+    content: { type: String, required: true },
+  },
+  { timestamps: true }
+);
 
-  static async findById(id) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).select('*').eq('id', id).single();
-  }
+const chatSessionSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    topic: { type: String, default: '' },
+    status: { type: String, enum: ['open', 'resolved'], default: 'open' },
+    messages: { type: [chatMessageSchema], default: [] },
+    lastAssistantResponseAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
 
-  static async findOne(query) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*');
-    for (const [key, value] of Object.entries(query)) {
-      db = db.eq(key, value);
-    }
-    return db.maybeSingle();
-  }
-
-  static async find(query = {}, options = {}) {
-    const supabase = getSupabase();
-    let db = supabase.from(this.table).select('*');
-    for (const [key, value] of Object.entries(query)) {
-      db = db.eq(key, value);
-    }
-    db = db.order('updated_at', { ascending: false });
-    if (options.limit) db = db.limit(options.limit);
-    const result = await db;
-    if (result.error) return result;
-    return { data: result.data, error: null };
-  }
-
-  static async create(data) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).insert([data]).select().single();
-  }
-
-  static async update(id, data) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).update(data).eq('id', id).select().single();
-  }
-
-  static async delete(id) {
-    const supabase = getSupabase();
-    return supabase.from(this.table).delete().eq('id', id);
-  }
-}
+const ChatSession = mongoose.models.ChatSession || mongoose.model('ChatSession', chatSessionSchema);
 
 module.exports = ChatSession;
+module.exports.ChatSession = ChatSession;
