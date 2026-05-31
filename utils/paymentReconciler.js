@@ -122,16 +122,14 @@ function startPaymentReconciler() {
     const olderThan = new Date(now - minAgeMs);
 
     try {
-      const { data: pendings, error: fetchErr } = await Payment.find(
-        { status: 'pending', createdAt: { $lte: olderThan.toISOString() } },
-        { limit: 50 }
-      );
-      if (fetchErr) throw fetchErr;
+      const pendings = await Payment.find({ status: 'pending', createdAt: { $lte: olderThan } })
+        .sort({ createdAt: -1 })
+        .limit(50);
 
       for (const p of pendings || []) {
         const ok = await reconcileOne(p);
         if (!ok && now - new Date(p.createdAt).getTime() > failAfterMs) {
-          await Payment.update(p.id || p._id, { status: 'failed' });
+          await Payment.findByIdAndUpdate(p.id || p._id, { status: 'failed' });
         }
       }
     } catch (err) {

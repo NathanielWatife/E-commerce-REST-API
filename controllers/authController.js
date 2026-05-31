@@ -35,9 +35,7 @@ const register = async (req, res) => {
 
 	const { name, email, password } = req.body;
 	try {
-		const { data: userAlreadyExists, error: searchError } = await User.findOne({email})
-		// Assuming we log searchError if any
-		if (searchError) throw searchError;
+		const userAlreadyExists = await User.findOne({email})
 		if (userAlreadyExists) {
 			return res.status(400).json({
 				success: false,
@@ -47,14 +45,13 @@ const register = async (req, res) => {
 		const hashPassword = await bcryptjs.hash(password, 12);
 		const verificationToken = generateRandomToken();
 
-		const { data: user, error: createError } = await User.create({
+		const user = await User.create({
 			name,
 			email,
 			password: hashPassword,
 			verificationToken,
-			verificationTokenExpiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), 
+			verificationTokenExpiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000), 
 		});
-		if (createError) throw createError;
 
 		const emailContent = generateVerificationEmail(name, verificationToken, email)
 		setImmediate(async () => {
@@ -120,8 +117,7 @@ const login = async (req, res) => {
 
 	const { email, password } = req.body;
 	try {
-		const { data: user, error: findError } = await User.findOne({ email })
-		if (findError) throw findError;
+		const user = await User.findOne({ email })
 		if (!user) {
 			return res.status(401).json({
 				success: false,
@@ -164,11 +160,10 @@ const login = async (req, res) => {
 			loginHistory = loginHistory.slice(-50);
 		}
 
-		const { data: updatedUser, error: updateError } = await User.update(user.id, {
+		await User.findByIdAndUpdate(user.id, {
 			loginHistory,
-			lastLogin: new Date().toISOString()
+			lastLogin: new Date()
 		});
-		if (updateError) throw updateError;
 
 		const token = generateTokenAndSetCookie(res, user.id);
 		// Log presence of Set-Cookie header (masked) to help debug cookie delivery
@@ -216,11 +211,10 @@ const verifyEmail = async (req, res) => {
 	const { email, token } = req.body
   
 	try {
-	  const { data: user, error: findError } = await User.findOne({
+	  const user = await User.findOne({
 		email,
 		verificationToken: token
 	  })
-      if (findError) throw findError;
   
 	  if (!user || new Date(user.verificationTokenExpiredAt) < new Date()) {
 		return res.status(400).json({
@@ -229,12 +223,11 @@ const verifyEmail = async (req, res) => {
 		})
 	  }
   
-	  const { error: updateError } = await User.update(user.id, {
+	  await User.findByIdAndUpdate(user.id, {
 		isVerified: true,
 		verificationToken: null,
 		verificationTokenExpiredAt: null
 	  });
-      if (updateError) throw updateError;
   
 	  const welcomeEmailContent = generateWelcomeEmail(user.name)
 	  await sendEmail({
@@ -263,8 +256,7 @@ const resendVerificationEmail = async (req, res) => {
 	const { email } = req.body
   
 	try {
-	  const { data: user, error: findError } = await User.findOne({ email })
-	  if (findError) throw findError;
+	  const user = await User.findOne({ email })
 	  if (!user) {
 		return res.status(404).json({
 		  success: false,
@@ -280,11 +272,10 @@ const resendVerificationEmail = async (req, res) => {
 	  }
   
 	  const verificationToken = generateRandomToken()
-	  const { error: updateError } = await User.update(user.id, {
+	  await User.findByIdAndUpdate(user.id, {
 		verificationToken,
-		verificationTokenExpiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+		verificationTokenExpiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
 	  });
-	  if (updateError) throw updateError;
   
 		const emailContent = generateVerificationEmail(user.name, verificationToken, email)
 		setImmediate(async () => {
@@ -342,8 +333,7 @@ const forgotPassword = async (req, res) => {
 	const { email } = req.body
   
 	try {
-	  const { data: user, error: findError } = await User.findOne({ email })
-	  if (findError) throw findError;
+	  const user = await User.findOne({ email })
 	  if (!user) {
 		return res.status(404).json({
 		  success: false,
@@ -352,11 +342,10 @@ const forgotPassword = async (req, res) => {
 	  }
   
 	  const resetToken = generateRandomToken()
-	  const { error: updateError } = await User.update(user.id, {
+	  await User.findByIdAndUpdate(user.id, {
 		resetPasswordToken: resetToken,
-		resetPasswordExpiredAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+		resetPasswordExpiredAt: new Date(Date.now() + 60 * 60 * 1000)
 	  });
-	  if (updateError) throw updateError;
   
 		const emailContent = generatePasswordResetEmail(user.name, resetToken, email, user.role)
 		setImmediate(async () => {
@@ -392,11 +381,10 @@ const resetPassword = async (req, res) => {
 	const { email, token, newPassword } = req.body
   
 	try {
-	  const { data: user, error: findError } = await User.findOne({
+	  const user = await User.findOne({
 		email,
 		resetPasswordToken: token
 	  })
-      if (findError) throw findError;
   
 	  if (!user || new Date(user.resetPasswordExpiredAt) < new Date()) {
 		return res.status(400).json({
@@ -406,12 +394,11 @@ const resetPassword = async (req, res) => {
 	  }
   
 	  const hashPassword = await bcryptjs.hash(newPassword, 12)
-	  const { error: updateError } = await User.update(user.id, {
+	  await User.findByIdAndUpdate(user.id, {
 		password: hashPassword,
 		resetPasswordToken: null,
 		resetPasswordExpiredAt: null
 	  });
-	  if (updateError) throw updateError;
   
 	  return res.status(200).json({
 		success: true,
@@ -432,8 +419,7 @@ const resetPassword = async (req, res) => {
 const getCurrentUser = async (req, res) => {
 	try {
         const userId = req.user?.id || req.user?._id;
-		const { data: user, error: findError } = await User.findById(userId)
-		if (findError) throw findError;
+		const user = await User.findById(userId)
 		if (!user) {
 			return res.status(404).json({
 				success: false,
