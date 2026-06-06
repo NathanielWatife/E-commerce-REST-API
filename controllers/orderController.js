@@ -129,7 +129,7 @@ const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("user", "name email").populate({
       path: "orderItems.product",
-      select: "name image",
+      select: "name image price",
     })
 
     if (!order) {
@@ -150,9 +150,19 @@ const getOrderById = async (req, res) => {
       })
     }
 
+    const obj = order.toObject()
+    const normalized = {
+      ...obj,
+      items: obj.orderItems,
+      totalAmount: obj.totalPrice,
+      subtotal: obj.itemsPrice,
+      shippingFee: obj.shippingPrice,
+      tax: obj.taxPrice,
+    }
+
     return res.status(200).json({
       success: true,
-      order,
+      order: normalized,
     })
   } catch (error) {
     logger.error("Get order by ID error:", error)
@@ -290,11 +300,23 @@ const updateOrderToDelivered = async (req, res) => {
 
 const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 })
+    const orders = await Order.find({ user: req.user._id })
+      .populate({ path: 'orderItems.product', select: 'name image price' })
+      .sort({ createdAt: -1 })
+
+    // Normalize to field names the frontend expects
+    const normalized = orders.map((o) => {
+      const obj = o.toObject()
+      return {
+        ...obj,
+        items: obj.orderItems,
+        totalAmount: obj.totalPrice,
+      }
+    })
 
     return res.status(200).json({
       success: true,
-      orders,
+      orders: normalized,
     })
   } catch (error) {
     logger.error("Get my orders error:", error)

@@ -13,21 +13,15 @@ const formatCurrencyNGN = (amount) => {
   }
 }
 
-let transporterSingleton = null
-
 const getTransporter = () => {
-  if (transporterSingleton) return transporterSingleton
   try {
-    transporterSingleton = nodemailer.createTransport({
+    return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: Number(process.env.EMAIL_PORT),
       secure: process.env.EMAIL_SECURE === "true",
-      pool: true,
-      maxConnections: 3,
-      maxMessages: 50,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
@@ -35,8 +29,8 @@ const getTransporter = () => {
     })
   } catch (e) {
     logger.error("Failed to initialize mail transporter", e)
+    return null
   }
-  return transporterSingleton
 }
 
 // Send an email using nodemailer
@@ -82,8 +76,8 @@ const sendEmail = async (options) => {
 
 // Generate verification email content
 const generateVerificationEmail = (name, token, email) => {
-  const clientUrl = process.env.CLIENT_URL
-  const verifyLink = `${clientUrl}/verify-email?email=${encodeURIComponent(email)}`
+  const clientUrl = process.env.CLIENT_URL?.replace(/\/$/, '')
+  const verifyLink = `${clientUrl}/verify-email?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
   return `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #333; text-align: center;">Verify Your Email Address</h2>

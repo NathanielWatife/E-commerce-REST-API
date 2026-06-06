@@ -29,31 +29,19 @@ if (process.env.TRUST_PROXY === 'true' || process.env.VERCEL || process.env.AWS_
   app.set('trust proxy', 1);
 }
 
-// CORS Configuration - MUST be before any routes
-const allowedOrigins = [
-(process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean)
-];
+const rawOrigins = process.env.CORS_ORIGIN || '';
+const clientOrigins = process.env.CLIENT_URL || '';
 
-// Add any additional origins from CLIENT_URL env variable
-if (process.env.CLIENT_URL) {
-  const envOrigins = process.env.CLIENT_URL.split(',').map(s => s.trim()).filter(Boolean);
-  envOrigins.forEach(origin => {
-    if (!allowedOrigins.includes(origin)) {
-      allowedOrigins.push(origin);
-    }
-  });
-}
+const allowedOrigins = [
+  ...rawOrigins.split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean),
+  ...clientOrigins.split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean)
+];
 
 const corsOptions = {
   credentials: true,
   origin: function (incomingOrigin, callback) {
-    // If no origin (e.g. curl, same-site requests), allow it
     if (!incomingOrigin) return callback(null, true);
-
-    // Check exact match
     if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
-
-    // Allow any vercel.app subdomain for flexibility
     try {
       const incomingHostname = new URL(incomingOrigin).hostname;
       if (incomingHostname.endsWith('.vercel.app')) return callback(null, true);
