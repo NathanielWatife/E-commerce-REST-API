@@ -16,6 +16,7 @@ const productSchema = new mongoose.Schema(
     image: { type: String, default: '' },
     brand: { type: String, default: '' },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
     description: { type: String, default: '' },
     reviews: { type: [reviewSchema], default: [] },
     rating: { type: Number, default: 0 },
