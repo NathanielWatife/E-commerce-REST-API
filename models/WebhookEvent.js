@@ -17,7 +17,4 @@ const webhookEventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const WebhookEvent = mongoose.models.WebhookEvent || mongoose.model('WebhookEvent', webhookEventSchema);
-
-module.exports = WebhookEvent;
-module.exports.WebhookEvent = WebhookEvent;
+module.exports = mongoose.models.WebhookEvent || mongoose.model('WebhookEvent', webhookEventSchema);

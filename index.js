@@ -13,12 +13,11 @@ const cartRoutes = require("./routes/cartRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const paymentRoutes = require("./routes/paymentRoutes.js");
 const notesRoutes = require('./routes/notesRoutes.js');
-const chatbotRoutes = require('./routes/chatbotRoutes.js');
 const uploadRoutes = require('./routes/uploadRoutes.js');
 const contactRoutes = require('./routes/contactRoutes.js');
 const requestLogger = require('./middleware/requestLogger.js');
 const logger = require("./utils/logger.js");
-const { paystackWebhook, flutterwaveWebhook } = require('./controllers/paymentController.js');
+const { paystackWebhook } = require('./controllers/paymentController.js');
 const { startPaymentReconciler } = require('./utils/paymentReconciler.js');
 const { initSuperAdmin } = require('./utils/initSuperAdmin.js');
 
@@ -83,7 +82,6 @@ if (isServerless) {
 }
 
 app.post('/api/payments/paystack/webhook', express.raw({ type: 'application/json' }), paystackWebhook)
-app.post('/api/payments/flutterwave/webhook', express.raw({ type: 'application/json' }), flutterwaveWebhook)
 
 
 app.use(express.json());
@@ -113,7 +111,6 @@ app.use("/api/cart", cartRoutes)
 app.use('/api/notes', notesRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/payments", paymentRoutes)
-app.use('/api/chatbot', chatbotRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/contact', contactRoutes)
 

@@ -9,9 +9,8 @@ const {
   verifyPaystackPayment,
   getBankInfo,
   submitBankTransfer,
-  initFlutterwavePayment,
-  verifyFlutterwavePayment,
   refundPayment,
+  paystackWebhook,
 } = require("../controllers/paymentController.js")
 const { protect, admin } = require("../middleware/authMiddleware.js")
 const { body } = require("express-validator")
@@ -47,14 +46,12 @@ router.route("/:id").get(protect, getPaymentById).put(protect, admin, validatePa
 // Paystack
 router.post("/paystack/init", protect, initPaystackPayment)
 router.post("/paystack/verify", protect, verifyPaystackPayment)
+router.post("/paystack/webhook", express.raw({ type: "application/json" }), paystackWebhook)
 
 // Bank transfer
 router.get("/bank-info", getBankInfo)
 router.post("/bank-transfer/submit", protect, submitBankTransfer)
 
-// Flutterwave
-router.post("/flutterwave/init", protect, initFlutterwavePayment)
-router.post("/flutterwave/verify", protect, verifyFlutterwavePayment)
 
 // Refund (admin)
 router.post('/:id/refund', protect, admin, refundPayment)
