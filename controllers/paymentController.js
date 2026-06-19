@@ -324,7 +324,7 @@ const initPaystackPayment = async (req, res) => {
           userId: req.user._id.toString()
         },
         currency: 'NGN',
-        callback_url: `${process.env.CLIENT_URL}/payment/verify?reference=${reference}`,
+        callback_url: `${process.env.CLIENT_URL}/payment/callback?reference=${reference}&orderId=${order._id.toString()}`,
       }),
     })
 
