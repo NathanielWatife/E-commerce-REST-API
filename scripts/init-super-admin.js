@@ -13,7 +13,7 @@ const NAME = process.env.SUPER_ADMIN_NAME
 const RESET = process.env.SUPER_ADMIN_RESET
 
 if (!EMAIL || !PASSWORD) {
-  console.error('Missing SUPER_ADMIN_EMAIL or SUPER_ADMIN_PASSWORD in environment')
+  console.error('Missing Credentials')
   process.exit(1)
 }
 
@@ -32,7 +32,7 @@ const run = async () => {
       accountStatus: 'active',
     })
     await user.save()
-    console.log(`Created super-admin ${EMAIL}`)
+    console.log("Created")
   } else {
     let changed = false
     if (existing.role !== 'super-admin') {
@@ -49,16 +49,16 @@ const run = async () => {
     changed = true
     if (changed) {
       await existing.save()
-      console.log(`Updated user ${EMAIL} to super-admin${RESET ? ' and reset password' : ''}`)
+      console.log("Updated")
     } else {
-      console.log(`Super-admin ${EMAIL} already configured`)
+      console.log("Admin already configured")
     }
   }
   await mongoose.connection.close()
 }
 
 run().catch(async (err) => {
-  console.error('Super-admin init failed:', err)
+  console.error('Admin init failed:', err)
   try { await mongoose.connection.close() } catch {}
   process.exit(1)
 })

@@ -10,7 +10,7 @@ const initSuperAdmin = async () => {
     const RESET = process.env.SUPER_ADMIN_RESET === 'true';
 
     if (!EMAIL || !PASSWORD) {
-      logger.warn('Super admin credentials not configured. Skipping initialization.');
+      logger.warn('Admin credentials not configured.');
       return;
     }
 
@@ -29,7 +29,7 @@ const initSuperAdmin = async () => {
         accountStatus: 'active',
       });
       
-      logger.info(`✓ Super admin created successfully: ${EMAIL}`);
+      logger.info("✓ Admin created successfully");
     } else {
       // Update existing user if needed
       let changed = false;
@@ -68,14 +68,14 @@ const initSuperAdmin = async () => {
 
       if (changed) {
         await User.findByIdAndUpdate(existing.id, updateData);
-        logger.info(`✓ Super admin updated: ${changes.join(', ')} [${EMAIL}]`);
+        logger.info(`✓ Admin updated: ${changes.join(', ')} `);
       } else {
-        logger.info(`✓ Super admin already configured: ${EMAIL}`);
+        logger.info(`✓ Admin already configured`);
       }
     }
   } catch (error) {
-    logger.error('Failed to initialize super admin:', error);
-    // Don't throw - allow app to continue even if super admin init fails
+    logger.error('Failed to initialize admin:', error);
+    // Don't throw - allow app to continue even if admin init fails
   }
 };
 
